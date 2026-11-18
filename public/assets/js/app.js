@@ -1784,7 +1784,7 @@ function vMasterKantin() {
     <form data-form="kantin-new" class="catnew" novalidate><input name="name" placeholder="Nama kantin baru, mis. Kantin Bu Siti" maxlength="40" aria-label="Nama kantin baru"><button class="btn primary" type="submit">+ Tambah kantin</button><p class="err" id="kn-err" hidden></p></form>
     <div class="list">${list.map(k => `<div class="li ${k.active === false ? 'off' : ''}"><span class="ico">${esc(initials(k.name))}</span>
       <div><div class="t">${esc(k.name)}${k.id === S.kid ? ' <span class="tag">sedang dikelola</span>' : ''}${k.active === false ? ' <span class="tag">Nonaktif</span>' : ''}</div><div class="s">${k.desc ? esc(k.desc) + ' · ' : ''}Pemilik: ${owners(k.id).map(u => esc(u.name)).join(', ') || 'belum ada'}</div></div>
-      <div class="li-act">${k.id === S.kid ? '' : `<button class="btn ghost sm" data-act="kantin-open" data-v="${esc(k.id)}">Kelola</button>`}<button class="iconbtn" data-act="kantin-edit" data-v="${esc(k.id)}" aria-label="Ubah ${esc(k.name)}">${ICONS.edit}</button></div></div>`).join('')}</div></div>`;
+      <div class="li-act">${k.id === S.kid ? '' : `<button class="btn ghost sm" data-act="kantin-open" data-v="${esc(k.id)}">Kelola</button>`}<button class="iconbtn" data-act="kantin-edit" data-v="${esc(k.id)}" aria-label="Ubah ${esc(k.name)}">${ICONS.edit}</button>${k.id === 'main' || list.length <= 1 ? '' : `<button class="iconbtn danger-ic" data-act="kantin-del" data-v="${esc(k.id)}" aria-label="Hapus ${esc(k.name)}">${ICONS.trash}</button>`}</div></div>`).join('')}</div></div>`;
 }
 function kantinForm(k) {
   return `<h3>Ubah kantin</h3><form data-form="kantin-edit" data-v="${esc(k.id)}" novalidate>
@@ -2476,6 +2476,24 @@ const ACT = {
   'pick-kantin': (el, id, v) => { if (!activeKantins().some(k => k.id === v)) return; S.guestKid = v; S.view = 'pesan'; render(); window.scrollTo(0, 0); },
   'kantin-open': (el, id, v) => { S.adminKid = v; try { localStorage.setItem('kantin-uis-kid', v); } catch (e) {} S.view = 'kasir'; render(); toast('Sekarang mengelola ' + kantinName(v)); },
   'kantin-edit': (el, id, v) => { const k = kantinsList().find(x => x.id === v); if (k) openSheet(() => kantinForm(k)); },
+  'kantin-del': (el, id, v) => {
+    const list = kantinsList(), k = list.find(x => x.id === v); if (!k) return;
+    if (k.id === 'main' || list.length <= 1) return toast('Kantin utama tidak bisa dihapus.');
+    const owners = users().filter(u => u.role === 'pemilik' && (u.kid || 'main') === v);
+    const msg = owners.length
+      ? `Kantin “${esc(k.name)}” akan dihapus dari daftar. ${owners.length} akun pemilik (${owners.map(u => esc(u.name)).join(', ')}) akan terlepas dari kantin ini.`
+      : `Kantin “${esc(k.name)}” akan dihapus dari daftar kantin.`;
+    confirmSheet('Hapus kantin?', msg, 'Hapus', async () => {
+      const next = list.filter(x => x.id !== v);
+      await Store.saveGlobal({kantins: next});
+      if (S.kid === v) {
+        const fallback = (next[0] && next[0].id) || 'main';
+        S.adminKid = fallback;
+        try { localStorage.setItem('kantin-uis-kid', fallback); } catch (e) {}
+      }
+      render(); toast('Kantin dihapus');
+    }, true);
+  },
   'guest-edit': () => { S.guest = {...S.guest, name: ''}; saveGuest(); S.cart = {}; S.authShown = null; closeDrawer(); closeSheet(); render(); },
   'qr-copy': (el, id) => { const t = tableOf(id), u = t && tableUrl(t); if (!u) return; navigator.clipboard.writeText(u).then(() => toast('Link disalin'), () => toast(u)); },
   'qr-png': (el, id) => { const t = tableOf(id); if (t) qrPng(t).catch(() => toast('Gagal membuat gambar QR.')); },
