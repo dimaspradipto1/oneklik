@@ -1973,14 +1973,28 @@ function nextQueue() {
 }
 function ticketHtml(o) {
   const it = orderItems(o), total = it.reduce((a, x) => a + lineAmt(x.p.price, x.q), 0), c = cfg();
-  return `<div class="ticket"><div class="tk-head"><b>ONEKLIK BIZ</b><span>${esc(c.shopName)}</span></div>
-    <div class="tk-title">PESANAN DAPUR</div>
-    <div class="tk-queue">Antrian <b>${o.queue || '-'}</b></div>
-    <div class="tk-meta">${o.tableName ? `<div><span>Meja</span><b>${esc(o.tableName)}</b></div>` : ''}<div><span>Nama</span><b>${esc(o.customer || '-')}</b></div>${o.phone ? `<div><span>HP</span><b>${esc(o.phone)}</b></div>` : ''}
-      <div><span>Jenis</span><b>${o.type === 'take' ? 'BUNGKUS' : 'Makan di tempat'}</b></div><div><span>Waktu</span><b>${fmtD(o.printedAt || Date.now(), {day: 'numeric', month: 'short'})} ${fmtT(o.printedAt || Date.now())}</b></div></div>
-    <table class="tk-items">${it.map(x => { const n = (o.notes || {})[x.p.id]; return `<tr><td class="q">${fq(x.q)}×</td><td>${esc(x.p.name)}${unitOf(x.p) !== 'porsi' ? ` <small>(${unitOf(x.p)})</small>` : ''}${n ? `<div class="tk-note">» ${esc(n)}</div>` : ''}</td></tr>`; }).join('')}</table>
-    <div class="tk-total"><span>Total (${o.paid ? 'LUNAS' + (o.payMethod && o.payMethod !== 'kasir' ? ' · ' + payLabel(o.payMethod) : '') : o.payMethod && o.payMethod !== 'kasir' ? payLabel(o.payMethod) + (o.payClaim ? ', diklaim lunas' : ', belum bayar') : 'belum dibayar'})</span><b>${rp(total)}</b></div>
-    <div class="tk-foot">Bayar di kasir saat mengambil pesanan</div></div>`;
+  const kObj = kantinsList().find(x => x.id === S.kid), sub = (kObj && kObj.desc) || c.shopName || 'Oneklik Biz';
+  const kasir = (me() && me().name) || 'Kasir';
+  const status = o.paid
+    ? 'LUNAS' + (o.payMethod && o.payMethod !== 'kasir' ? ' · ' + payLabel(o.payMethod) : '')
+    : (o.payMethod && o.payMethod !== 'kasir' ? payLabel(o.payMethod) + (o.payClaim ? ' (diklaim lunas)' : ' (belum bayar)') : 'BELUM BAYAR');
+  return `<div class="ticket"><div class="tk-head"><b>${esc(kantinName(S.kid).toUpperCase())}</b><span>${esc(sub)}</span></div>
+    <div class="tk-title">PESANAN${o.queue ? ' · ANTRIAN #' + o.queue : ''}</div>
+    <div class="tk-meta">
+      <div><span>Waktu</span><b>${fmtD(o.printedAt || Date.now(), {day: '2-digit', month: '2-digit', year: 'numeric'})} ${fmtT(o.printedAt || Date.now())}</b></div>
+      <div><span>Kasir</span><b>${esc(kasir)}</b></div>
+      <div><span>Pelanggan</span><b>${esc(o.customer || 'Umum')}</b></div>
+      ${o.tableName ? `<div><span>Meja</span><b>${esc(o.tableName)}</b></div>` : ''}
+      ${o.phone ? `<div><span>HP</span><b>${esc(o.phone)}</b></div>` : ''}
+      <div><span>Tipe</span><b>${o.type === 'take' ? 'Bungkus' : 'Makan di tempat'}</b></div>
+    </div>
+    <div class="tk-items" style="padding:4px 0">${it.map(x => {
+      const n = (o.notes || {})[x.p.id], amt = lineAmt(x.p.price, x.q);
+      return `<div class="tk-line"><div class="tk-lname">${esc(x.p.name)}</div><div class="tk-lsub"><span>${fq(x.q)} ${esc(unitOf(x.p))} × ${rp(x.p.price)}</span><b>${rp(amt)}</b></div>${n ? `<div class="tk-note">* ${esc(n)}</div>` : ''}</div>`;
+    }).join('')}</div>
+    <div class="tk-grand"><span>TOTAL</span><span>${rp(total)}</span></div>
+    <div class="tk-badge">*** ${esc(status.toUpperCase())} ***</div>
+    <div class="tk-foot">Silakan bayar di kasir saat mengambil pesanan<br>Powered by Oneklik Biz</div></div>`;
 }
 function printTicket(o) {
   const html = ticketHtml(o);
@@ -1996,17 +2010,28 @@ function printTicket(o) {
 }
 function saleReceiptHtml(t) {
   const c = cfg(), method = METHODS[methodOf(t)] + (t.wallet ? ' (' + payLabel(t.wallet) + ')' : '');
-  return `<div class="ticket"><div class="tk-head"><b>${esc(kantinName(S.kid))}</b><span>${esc(c.shopName)}</span></div>
+  const kObj = kantinsList().find(x => x.id === S.kid), sub = (kObj && kObj.desc) || c.shopName || 'Oneklik Biz';
+  const kasir = (me() && me().name) || 'Kasir';
+  return `<div class="ticket"><div class="tk-head"><b>${esc(kantinName(S.kid).toUpperCase())}</b><span>${esc(sub)}</span></div>
     <div class="tk-title">STRUK PEMBAYARAN</div>
-    <div class="tk-meta"><div><span>No. Struk</span><b>#${pad3(t.no || 0)}</b></div>${t.customer ? `<div><span>Pelanggan</span><b>${esc(t.customer)}</b></div>` : ''}${t.tableName ? `<div><span>Meja</span><b>${esc(t.tableName)}</b></div>` : ''}
-      <div><span>Jenis</span><b>${t.orderType === 'take' ? 'Bungkus' : 'Makan di tempat'}</b></div>
-      <div><span>Waktu</span><b>${fmtD(t.at, {day: 'numeric', month: 'short', year: 'numeric'})} ${fmtT(t.at)}</b></div>
-      <div><span>Bayar</span><b>${esc(method)}</b></div></div>
-    <table class="tk-items">${t.items.map(it => `<tr><td class="q">${fq(it.qty)}×</td><td>${esc(it.name)}<div class="tk-note">${rp(it.price)}</div>${it.note ? `<div class="tk-note">» ${esc(it.note)}</div>` : ''}</td><td style="text-align:right;font-weight:700">${rp(lineAmt(it.price, it.qty))}</td></tr>`).join('')}</table>
-    ${t.discount ? `<div class="tk-total"><span>Subtotal</span><b>${rp(t.subtotal)}</b></div><div class="tk-total"><span>Diskon ${discLabel(t.discount)}</span><b>−${rp(t.discount.amount)}</b></div>` : ''}
-    <div class="tk-total"><span>TOTAL</span><b>${rp(t.total)}</b></div>
+    <div class="tk-meta">
+      <div><span>No. Struk</span><b>#${pad3(t.no || 0)}</b></div>
+      <div><span>Tanggal</span><b>${fmtD(t.at, {day: '2-digit', month: '2-digit', year: 'numeric'})} ${fmtT(t.at)}</b></div>
+      <div><span>Kasir</span><b>${esc(kasir)}</b></div>
+      ${t.customer ? `<div><span>Pelanggan</span><b>${esc(t.customer)}</b></div>` : ''}
+      ${t.tableName ? `<div><span>Meja</span><b>${esc(t.tableName)}</b></div>` : ''}
+      <div><span>Tipe</span><b>${t.orderType === 'take' ? 'Bungkus' : 'Makan di tempat'}</b></div>
+    </div>
+    <div class="tk-items" style="padding:4px 0">${t.items.map(it => {
+      const amt = lineAmt(it.price, it.qty);
+      return `<div class="tk-line"><div class="tk-lname">${esc(it.name)}</div><div class="tk-lsub"><span>${fq(it.qty)} ${esc(itUnit(it))} × ${rp(it.price)}</span><b>${rp(amt)}</b></div>${it.note ? `<div class="tk-note">* ${esc(it.note)}</div>` : ''}</div>`;
+    }).join('')}</div>
+    ${t.discount ? `<div class="tk-total"><span>Subtotal</span><b>${rp(t.subtotal)}</b></div><div class="tk-total"><span>Diskon (${discLabel(t.discount)})</span><b>−${rp(t.discount.amount)}</b></div>` : ''}
+    <div class="tk-grand"><span>TOTAL</span><span>${rp(t.total)}</span></div>
+    <div class="tk-total"><span>Pembayaran</span><b>${esc(method)}</b></div>
     ${t.paid ? `<div class="tk-total"><span>Tunai</span><b>${rp(t.paid)}</b></div><div class="tk-total"><span>Kembali</span><b>${rp(t.change || 0)}</b></div>` : ''}
-    <div class="tk-foot">${t.void ? '*** TRANSAKSI DIBATALKAN ***' : 'Terima kasih atas kunjungan Anda!'}</div></div>`;
+    <div class="tk-badge">${t.void ? '*** TRANSAKSI DIBATALKAN ***' : '*** LUNAS ***'}</div>
+    <div class="tk-foot">Terima kasih atas kunjungan Anda!<br>Barang yang sudah dibeli tidak dapat ditukar.<br>Powered by Oneklik Biz</div></div>`;
 }
 function printSaleReceipt(t) {
   const html = saleReceiptHtml(t);
