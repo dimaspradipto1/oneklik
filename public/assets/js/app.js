@@ -2265,7 +2265,7 @@ async function pay() {
     await Store.addSale(key, id, tx);
     if (savedId) Store.delOrder(savedId).catch(() => {});
     buzz();
-    toast(`No. ${pad3(tx.no)} tersimpan · ${METHODS[tx.method]} ${rp(tx.total)}${tx.paid ? ' · Kembalian ' + rp(tx.change) : ''}`, {label: 'Batalkan', fn: () => Store.voidSale(key, id).then(() => toast('Transaksi dibatalkan')).catch(e => toast('Gagal membatalkan: ' + errMsg(e)))});
+    toast(`No. ${pad3(tx.no)} tersimpan · ${METHODS[tx.method]} ${rp(tx.total)}${tx.paid ? ' · Kembalian ' + rp(tx.change) : ''}`, {label: 'Cetak Struk', fn: () => printSaleReceipt({...tx, id, day: key})});
   } catch (e) { S.cart = before.cart; S.meta = before.meta; syncCustInputs(); toast('Gagal menyimpan: ' + errMsg(e)); }
   finally { S.paying = false; render(); }
 }
