@@ -1310,6 +1310,7 @@ function receipt(t, noVoid) {
     <footer><span>${t.deliveredAt ? 'Diantar ' + fmtT(t.deliveredAt) + ' · ' : ''}Total · ${METHODS[methodOf(t)]}${t.wallet ? ' (' + payLabel(t.wallet) + ')' : ''}${t.queue ? ' · Antrian ' + t.queue : ''}</span><b class="num">${rp(t.total)}</b></footer>
     ${t.paid ? `<div class="paidrow"><span>Tunai <b class="num">${rp(t.paid)}</b></span><span>Kembali <b class="num">${rp(t.change || 0)}</b></span></div>` : ''}
     ${t.void ? '<span class="stamp">DIBATALKAN</span>' : noVoid ? '' : `<button class="linkbtn" data-act="void" data-id="${esc(t.id)}" data-v="${esc(t.day)}">Batalkan (hapus dari laporan)</button>`}
+    ${noVoid ? '' : `<button class="linkbtn" data-act="tx-print" data-id="${esc(t.id)}" data-v="${esc(t.day)}">${ICONS.printer}Cetak struk</button>`}
     ${noVoid ? '' : `<button class="linkbtn danger-txt rdel" data-act="tx-del" data-id="${esc(t.id)}" data-v="${esc(t.day)}">${ICONS.trash}Hapus permanen</button>`}</article>`;
 }
 function vRiwayat() {
@@ -1808,7 +1809,7 @@ function userForm(u) {
       <div class="field"><label for="uf-contact">NIM / Email</label><input id="uf-contact" name="contact" value="${esc(u.contact || '')}" maxlength="60" autocomplete="off"></div></div>
     <div class="field"><label for="uf-kid">Kantin (untuk Pemilik Usaha)</label><select id="uf-kid" name="kid">${kantinsList().map(k => `<option value="${esc(k.id)}" ${(u.kid || 'main') === k.id ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select><span class="hint">Pemilik hanya bisa melihat dan mengelola kantin ini. Admin bisa mengelola semua kantin.</span></div>
     <div class="field"><label for="uf-role">Role</label><select id="uf-role" name="role">${Object.entries(ROLES).filter(([k]) => k !== 'pelanggan').map(([k, r]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${r.l}</option>`).join('')}</select></div>
-    ${isNew ? `<div class="field"><label for="uf-pw">Password awal</label><input id="uf-pw" name="pw" type="password" autocomplete="new-password" placeholder="min. 12 karakter"></div>` : ''}
+    ${isNew ? `<div class="field"><label for="uf-pw">Password awal</label><div class="ain"><input id="uf-pw" name="pw" type="password" autocomplete="new-password" placeholder="min. 12 karakter" style="padding-left:12px"><button type="button" class="aeye" data-act="pw-eye" data-v="uf-pw" aria-label="Tampilkan password">${ICONS.eyeoff}</button></div></div>` : ''}
     <label class="check"><input type="checkbox" name="active" ${u.active !== false ? 'checked' : ''}> Akun aktif (bisa masuk)</label>
     <p class="err" id="uf-err" hidden></p>
     <div class="two"><button type="button" class="btn ghost" data-act="close-sheet">Batal</button><button class="btn primary" type="submit">Simpan</button></div></form>`;
@@ -1820,11 +1821,12 @@ function vGantiPw() {
     ${pwForm(u, true).replace(/<h3>[\s\S]*?<\/h3>/, '').replace('<button type="button" class="btn ghost" data-act="close-sheet">Batal</button>', '<button type="button" class="btn ghost" data-act="logout">Keluar</button>')}</div>`;
 }
 function pwForm(u, self) {
+  const box = (id, name, ac, ph = '') => `<div class="ain"><input id="${id}" name="${name}" type="password" autocomplete="${ac}"${ph ? ` placeholder="${ph}"` : ''} style="padding-left:12px"><button type="button" class="aeye" data-act="pw-eye" data-v="${id}" aria-label="Tampilkan password">${ICONS.eyeoff}</button></div>`;
   return `<h3>${self ? 'Ubah password' : 'Reset password · ' + esc(u.name)}</h3><form data-form="pw" data-id="${esc(u.id)}" data-self="${self ? 1 : ''}" novalidate>
-    ${self ? `<div class="field"><label for="pw-old">Password lama</label><input id="pw-old" name="old" type="password" autocomplete="current-password"></div>` : ''}
+    ${self ? `<div class="field"><label for="pw-old">Password lama</label>${box('pw-old', 'old', 'current-password')}</div>` : ''}
     ${self ? '' : '<p class="hint" style="margin-top:-4px">Password ini bersifat sementara. Pemilik akun wajib menggantinya sendiri saat masuk berikutnya, dan akan diberi tahu bahwa passwordnya direset admin.</p>'}
-    <div class="field"><label for="pw-new">Password baru</label><input id="pw-new" name="pw" type="password" autocomplete="new-password" placeholder="min. 12 karakter"></div>
-    <div class="field"><label for="pw-new2">Ulangi password baru</label><input id="pw-new2" name="pw2" type="password" autocomplete="new-password"></div>
+    <div class="field"><label for="pw-new">Password baru</label>${box('pw-new', 'pw', 'new-password', 'min. 12 karakter')}</div>
+    <div class="field"><label for="pw-new2">Ulangi password baru</label>${box('pw-new2', 'pw2', 'new-password')}</div>
     <p class="err" id="pw-err" hidden></p>
     <div class="two"><button type="button" class="btn ghost" data-act="close-sheet">Batal</button><button class="btn primary" type="submit">Simpan</button></div></form>`;
 }
@@ -1986,6 +1988,28 @@ function printTicket(o) {
     openSheet(() => `<h3>Cetak pesanan</h3><div class="tk-preview">${html}</div><p class="hint">Tampilan online tidak bisa membuka dialog cetak. Cetak dari versi XAMPP (http://…/oneklik/) atau browser biasa.</p><button class="btn primary block" data-act="close-sheet">Tutup</button>`);
     return;
   }
+  $('#print-area').innerHTML = html;
+  document.body.classList.add('print-ticket');
+  const done = () => { document.body.classList.remove('print-ticket'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => window.print(), 50);
+}
+function saleReceiptHtml(t) {
+  const c = cfg(), method = METHODS[methodOf(t)] + (t.wallet ? ' (' + payLabel(t.wallet) + ')' : '');
+  return `<div class="ticket"><div class="tk-head"><b>${esc(kantinName(S.kid))}</b><span>${esc(c.shopName)}</span></div>
+    <div class="tk-title">STRUK PEMBAYARAN</div>
+    <div class="tk-meta"><div><span>No. Struk</span><b>#${pad3(t.no || 0)}</b></div>${t.customer ? `<div><span>Pelanggan</span><b>${esc(t.customer)}</b></div>` : ''}${t.tableName ? `<div><span>Meja</span><b>${esc(t.tableName)}</b></div>` : ''}
+      <div><span>Jenis</span><b>${t.orderType === 'take' ? 'Bungkus' : 'Makan di tempat'}</b></div>
+      <div><span>Waktu</span><b>${fmtD(t.at, {day: 'numeric', month: 'short', year: 'numeric'})} ${fmtT(t.at)}</b></div>
+      <div><span>Bayar</span><b>${esc(method)}</b></div></div>
+    <table class="tk-items">${t.items.map(it => `<tr><td class="q">${fq(it.qty)}×</td><td>${esc(it.name)}<div class="tk-note">${rp(it.price)}</div>${it.note ? `<div class="tk-note">» ${esc(it.note)}</div>` : ''}</td><td style="text-align:right;font-weight:700">${rp(lineAmt(it.price, it.qty))}</td></tr>`).join('')}</table>
+    ${t.discount ? `<div class="tk-total"><span>Subtotal</span><b>${rp(t.subtotal)}</b></div><div class="tk-total"><span>Diskon ${discLabel(t.discount)}</span><b>−${rp(t.discount.amount)}</b></div>` : ''}
+    <div class="tk-total"><span>TOTAL</span><b>${rp(t.total)}</b></div>
+    ${t.paid ? `<div class="tk-total"><span>Tunai</span><b>${rp(t.paid)}</b></div><div class="tk-total"><span>Kembali</span><b>${rp(t.change || 0)}</b></div>` : ''}
+    <div class="tk-foot">${t.void ? '*** TRANSAKSI DIBATALKAN ***' : 'Terima kasih atas kunjungan Anda!'}</div></div>`;
+}
+function printSaleReceipt(t) {
+  const html = saleReceiptHtml(t);
   $('#print-area').innerHTML = html;
   document.body.classList.add('print-ticket');
   const done = () => { document.body.classList.remove('print-ticket'); window.removeEventListener('afterprint', done); };
@@ -2377,6 +2401,10 @@ const ACT = {
     const t = allTx().find(x => x.id === id && x.day === day); if (!t) return;
     confirmSheet('Hapus transaksi dari laporan?', `No. ${pad3(t.no)} pukul ${fmtT(t.at)} senilai ${rp(t.total)} akan ditandai batal dan tidak dihitung di laporan. Catatannya tetap terlihat di riwayat.`, 'Ya, hapus dari laporan',
       () => Store.voidSale(day, id).then(() => toast('Transaksi dibatalkan')).catch(e => toast('Gagal: ' + errMsg(e))), true);
+  },
+  'tx-print': (el, id, day) => {
+    const t = allTx().find(x => x.id === id && x.day === day);
+    if (t) printSaleReceipt(t);
   },
   'confirm-yes': () => { const fn = S.confirmFn; S.confirmFn = null; closeSheet(); fn && fn(); },
   'close-sheet': () => closeSheet(),

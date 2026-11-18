@@ -236,6 +236,7 @@ main#view{min-width:0;max-width:100%}
 .cash .chip{min-height:36px;padding:6px 12px;font-size:13px}
 .change{display:flex;justify-content:space-between;background:var(--brand-soft);color:var(--brand-text);border-radius:12px;padding:10px 12px;font-weight:800;font-size:16px;margin-top:6px}
 .change.short{background:var(--bad-soft);color:var(--bad)}
+.forcepw .change{display:block;text-align:justify;line-height:1.5;font-weight:500}
 .ofoot .linkbtn{justify-self:center;padding:0}
 .oact{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px}
 .oact.three{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
