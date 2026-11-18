@@ -1,0 +1,20 @@
+# Oneklik Biz: folder publik (satu-satunya folder yang boleh dibuka browser).
+DirectoryIndex index.php
+Options -Indexes
+
+# Installable app (PWA)
+AddType application/manifest+json .webmanifest
+
+<IfModule headers_module>
+  # Halaman, API, service worker dan manifest selalu versi terbaru.
+  <FilesMatch "^(index\.php|sw\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  # CSS/JS diberi ?v=<waktu ubah> oleh halaman, jadi boleh disimpan lama.
+  <FilesMatch "\.(css|js|webp|png)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  <FilesMatch "^sw\.js$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>

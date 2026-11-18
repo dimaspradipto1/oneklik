@@ -1,0 +1,15 @@
+# Oneklik Biz: semua permintaan diarahkan ke folder public/.
+# Folder src/, config/, sql/, views/, storage/, tools/, tests/ tidak bisa dibuka dari browser.
+# (Di hosting yang bisa mengatur "document root", arahkan langsung ke folder public/.)
+Options -Indexes
+
+<FilesMatch "\.(md|sql|log|bak)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^$ public/ [L]
+  RewriteCond %{REQUEST_URI} !/public/
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
