@@ -2930,8 +2930,6 @@ document.addEventListener('submit', async e => {
       toast('Password berhasil diperbarui. Silakan masuk dengan password baru.');
       return;
     }
-      return;
-    }
     if (kind === 'user') {
       if (role() !== 'admin') return;
       const id = f.dataset.id, old = S.users[id] || {}, name = String(fd.get('name') || '').trim(), username = String(fd.get('username') || '').trim(), contact = String(fd.get('contact') || '').trim();
