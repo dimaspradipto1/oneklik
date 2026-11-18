@@ -1991,8 +1991,8 @@ function ticketHtml(o) {
       return `<tr><td class="pn">${esc(x.p.name.toUpperCase())}</td><td class="pq">${fq(x.q)}</td><td class="pp">${rcptNum(x.p.price)}</td><td class="pt">${rcptNum(amt)}</td></tr>${n ? `<tr class="pnote"><td colspan="4">* ${esc(n)}</td></tr>` : ''}`;
     }).join('')}</table>
     <div class="tk-sum">
-      <div class="tk-srow stot"><span class="sl">TOTAL</span><span class="sc">:</span><span class="sv">${rcptNum(total)}</span></div>
-      <div class="tk-srow"><span class="sl">STATUS</span><span class="sc">:</span><span class="sv">${esc(status)}</span></div>
+      <div class="tk-srow stot"><span class="tk-sl">TOTAL</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(total)}</span></div>
+      <div class="tk-srow"><span class="tk-sl">STATUS</span><span class="tk-sc">:</span><span class="tk-sv">${esc(status)}</span></div>
     </div>
     <div class="tk-foot">TERIMA KASIH. SELAMAT BELANJA KEMBALI<br>====== LAYANAN KONSUMEN ONEKLIK BIZ ======<br>SILAKAN BAYAR DI KASIR SAAT MENGAMBIL PESANAN</div></div>`;
 }
@@ -2021,11 +2021,11 @@ function saleReceiptHtml(t) {
       return `<tr><td class="pn">${esc(it.name.toUpperCase())}</td><td class="pq">${fq(it.qty)}</td><td class="pp">${rcptNum(it.price)}</td><td class="pt">${rcptNum(amt)}</td></tr>${it.note ? `<tr class="pnote"><td colspan="4">* ${esc(it.note)}</td></tr>` : ''}`;
     }).join('')}</table>
     <div class="tk-sum">
-      ${t.discount ? `<div class="tk-srow"><span class="sl">HARGA JUAL</span><span class="sc">:</span><span class="sv">${rcptNum(t.subtotal)}</span></div><div class="tk-srow"><span class="sl">DISKON (${esc(discLabel(t.discount).toUpperCase())})</span><span class="sc">:</span><span class="sv">(${rcptNum(t.discount.amount)})</span></div>` : ''}
-      <div class="tk-srow ${t.discount ? 'sdiv ' : ''}stot"><span class="sl">TOTAL</span><span class="sc">:</span><span class="sv">${rcptNum(t.total)}</span></div>
-      <div class="tk-srow"><span class="sl">${esc(method)}</span><span class="sc">:</span><span class="sv">${rcptNum(payAmt)}</span></div>
-      ${t.paid ? `<div class="tk-srow"><span class="sl">KEMBALI</span><span class="sc">:</span><span class="sv">${rcptNum(t.change || 0)}</span></div>` : ''}
-      ${t.discount ? `<div class="tk-srow"><span class="sl">ANDA HEMAT</span><span class="sc">:</span><span class="sv">${rcptNum(t.discount.amount)}</span></div>` : ''}
+      ${t.discount ? `<div class="tk-srow"><span class="tk-sl">HARGA JUAL</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(t.subtotal)}</span></div><div class="tk-srow"><span class="tk-sl">DISKON (${esc(discLabel(t.discount).toUpperCase())})</span><span class="tk-sc">:</span><span class="tk-sv">(${rcptNum(t.discount.amount)})</span></div>` : ''}
+      <div class="tk-srow ${t.discount ? 'sdiv ' : ''}stot"><span class="tk-sl">TOTAL</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(t.total)}</span></div>
+      <div class="tk-srow"><span class="tk-sl">${esc(method)}</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(payAmt)}</span></div>
+      ${t.paid ? `<div class="tk-srow"><span class="tk-sl">KEMBALI</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(t.change || 0)}</span></div>` : ''}
+      ${t.discount ? `<div class="tk-srow"><span class="tk-sl">ANDA HEMAT</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(t.discount.amount)}</span></div>` : ''}
     </div>
     <div class="tk-foot">${t.void ? '*** TRANSAKSI DIBATALKAN ***<br>' : ''}TERIMA KASIH. SELAMAT BELANJA KEMBALI<br>====== LAYANAN KONSUMEN ONEKLIK BIZ ======<br>${esc(c.shopName || 'Oneklik Biz')}</div></div>`;
 }
