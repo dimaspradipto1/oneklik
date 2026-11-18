@@ -582,11 +582,11 @@ textarea{resize:vertical;min-height:64px;line-height:1.4}
 .tk-pos td.pp{text-align:right;white-space:nowrap;width:44px;font-variant-numeric:tabular-nums}
 .tk-pos td.pt{text-align:right;white-space:nowrap;width:50px;font-variant-numeric:tabular-nums;font-weight:700}
 .tk-pos tr.pnote td{padding:0 1px 2px;font-size:9.5px;font-style:italic;color:#333}
-.tk-sum{width:100%;min-width:0!important;border-collapse:collapse;font-size:10.5px;margin-top:2px}
+.tk-sum{width:100%;min-width:0!important;table-layout:fixed;border-collapse:collapse;font-size:10.5px;margin-top:2px}
 .tk-sum td{padding:1.5px 1px;border:0}
-.tk-sum td.sl{text-align:right;padding-right:4px}
-.tk-sum td.sc{width:8px;text-align:center}
-.tk-sum td.sv{text-align:right;white-space:nowrap;width:62px;font-variant-numeric:tabular-nums}
+.tk-sum td.sl{text-align:right;padding-right:2px;width:auto}
+.tk-sum td.sc{width:10px;text-align:center}
+.tk-sum td.sv{text-align:right;white-space:nowrap;width:50px;font-variant-numeric:tabular-nums}
 .tk-sum tr.sdiv td{border-top:1px dashed #000;padding-top:3px}
 .tk-sum tr.stot td{font-weight:800;font-size:11.5px}
 .tk-foot{text-align:center;font-size:9.5px;margin-top:6px;padding-top:5px;line-height:1.4;word-break:break-word}
