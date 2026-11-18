@@ -1994,7 +1994,7 @@ function ticketHtml(o) {
       <div class="tk-srow stot"><span class="tk-sl">TOTAL</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(total)}</span></div>
       <div class="tk-srow"><span class="tk-sl">STATUS</span><span class="tk-sc">:</span><span class="tk-sv">${esc(status)}</span></div>
     </div>
-    <div class="tk-foot">TERIMA KASIH. SELAMAT BELANJA KEMBALI<br>====== LAYANAN KONSUMEN ONEKLIK BIZ ======<br>SILAKAN BAYAR DI KASIR SAAT MENGAMBIL PESANAN</div></div>`;
+    <div class="tk-foot">TERIMA KASIH. SELAMAT BELANJA KEMBALI<br>=== LAYANAN KONSUMEN ONEKLIK ===<br>BAYAR DI KASIR SAAT MENGAMBIL PESANAN</div></div>`;
 }
 function printTicket(o) {
   const html = ticketHtml(o);
@@ -2027,7 +2027,7 @@ function saleReceiptHtml(t) {
       ${t.paid ? `<div class="tk-srow"><span class="tk-sl">KEMBALI</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(t.change || 0)}</span></div>` : ''}
       ${t.discount ? `<div class="tk-srow"><span class="tk-sl">ANDA HEMAT</span><span class="tk-sc">:</span><span class="tk-sv">${rcptNum(t.discount.amount)}</span></div>` : ''}
     </div>
-    <div class="tk-foot">${t.void ? '*** TRANSAKSI DIBATALKAN ***<br>' : ''}TERIMA KASIH. SELAMAT BELANJA KEMBALI<br>====== LAYANAN KONSUMEN ONEKLIK BIZ ======<br>${esc(c.shopName || 'Oneklik Biz')}</div></div>`;
+    <div class="tk-foot">${t.void ? '*** TRANSAKSI DIBATALKAN ***<br>' : ''}TERIMA KASIH. SELAMAT BELANJA KEMBALI<br>=== LAYANAN KONSUMEN ONEKLIK ===<br>${esc(c.shopName || 'Oneklik Biz')}</div></div>`;
 }
 function printSaleReceipt(t) {
   const html = saleReceiptHtml(t);
