@@ -97,6 +97,26 @@ final class AuthService
         return $id;
     }
 
+    public function resetPassword(string $login, string $newPassword): void
+    {
+        $login = trim($login);
+        if ($login === '') throw new HttpException('Username wajib diisi.');
+        if (!Password::acceptable($newPassword)) throw new HttpException('Password baru harus 12–128 karakter.');
+
+        $found = $this->users->findByLogin($login);
+        if (!$found) throw new HttpException('Username tidak ditemukan.', 404);
+
+        [$id, $u] = $found;
+        if (!User::isStaff($u)) throw new HttpException('Akun ini dinonaktifkan oleh super admin. Hubungi pengelola Oneklik Biz.', 403);
+
+        $u->hash = Password::hash($newPassword);
+        unset($u->salt);
+        $u->mustChange = false;
+        $u->pwResetAt = Str::nowMs();
+        $u->pwResetBy = 'lupa password';
+        $this->users->save($id, $u);
+    }
+
     private function startSession(string $id): void
     {
         session_regenerate_id(true);

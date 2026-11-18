@@ -31,4 +31,11 @@ final class AuthController
         $id = $this->auth->register($r->input('data'));
         Response::json(['ok' => true, 'id' => $id]);
     }
+
+    /** POST ?op=reset_password {username, password} */
+    public function resetPassword(Request $r): void
+    {
+        $this->auth->resetPassword((string)$r->input('username', ''), (string)$r->input('password', ''));
+        Response::json(['ok' => true]);
+    }
 }

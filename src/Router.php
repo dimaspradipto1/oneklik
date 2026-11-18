@@ -36,9 +36,10 @@ final class Router
         'rev'      => [SystemController::class, 'rev'],
         'dump'     => [DataController::class, 'dump'],
         'write'    => [DataController::class, 'write'],
-        'login'    => [AuthController::class, 'login'],
-        'logout'   => [AuthController::class, 'logout'],
-        'register' => [AuthController::class, 'register'],
+        'login'          => [AuthController::class, 'login'],
+        'logout'         => [AuthController::class, 'logout'],
+        'register'       => [AuthController::class, 'register'],
+        'reset_password' => [AuthController::class, 'resetPassword'],
     ];
 
     private array $services = [];

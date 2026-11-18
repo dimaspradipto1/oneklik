@@ -2386,7 +2386,14 @@ const ACT = {
   'auth-mode': (el, id, v) => { S.authPage = ['register', 'registered'].includes(v) ? v : 'login'; S.authShown = null; render(); const i = document.querySelector('#auth input'); if (i) i.focus(); },
   'pw-eye': (el, id, v) => { const i = document.getElementById(v); if (!i) return; const show = i.type === 'password'; i.type = show ? 'text' : 'password'; el.innerHTML = show ? ICONS.eye : ICONS.eyeoff; el.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password'); },
   google: () => toast('Masuk dengan Google belum tersedia di versi ini karena memerlukan server. Gunakan username dan password.'),
-  forgot: () => openSheet(() => '<h3>Lupa password?</h3><p class="muted">Hubungi admin Oneklik Biz. Admin dapat mengatur ulang password Anda di menu <b>Master Data → Pengguna</b>, lalu Anda bisa masuk dengan password baru dan menggantinya lewat ikon kunci.</p><button class="btn primary block" data-act="close-sheet">Mengerti</button>'),
+  forgot: () => openSheet(() => `<h3>Reset Password</h3><p class="muted">Masukkan username dan password baru Anda (minimal 12 karakter).</p>
+    <form data-form="forgot" novalidate>
+      <div class="field"><label for="fp-user">Username / Email / No. HP</label><input id="fp-user" name="username" autocomplete="username" placeholder="Masukkan username Anda" required></div>
+      <div class="field"><label for="fp-pw">Password baru</label><div class="ain"><input id="fp-pw" name="password" type="password" autocomplete="new-password" placeholder="Minimal 12 karakter" minlength="12" required style="padding-left:12px"><button type="button" class="eye" data-act="pw-eye" data-v="fp-pw" aria-label="Tampilkan password">${ICONS.eyeoff}</button></div></div>
+      <div class="field"><label for="fp-pw2">Ulangi password baru</label><div class="ain"><input id="fp-pw2" name="password2" type="password" autocomplete="new-password" placeholder="Ulangi password baru" minlength="12" required style="padding-left:12px"><button type="button" class="eye" data-act="pw-eye" data-v="fp-pw2" aria-label="Tampilkan password">${ICONS.eyeoff}</button></div></div>
+      <p class="aerr" id="fp-err" hidden></p>
+      <div class="two" style="margin-top:12px"><button type="button" class="btn ghost" data-act="close-sheet">Batal</button><button type="submit" class="btn primary">Simpan Password Baru</button></div>
+    </form>`),
   'val-list': () => openSheet(valSheet, true),
   'pay-validate': (el, id) => {
     const o = S.orders[id]; if (!o) return;
@@ -2898,6 +2905,31 @@ document.addEventListener('submit', async e => {
       await Store.saveUser(u); setSession(u.id);
       S.view = homeView(); S.authShown = null; render();
       toast('Akun super admin dibuat');
+      return;
+    }
+    if (kind === 'forgot') {
+      const username = String(fd.get('username') || '').trim();
+      const pw = String(fd.get('password') || ''), pw2 = String(fd.get('password2') || '');
+      if (!username) return fail('#fp-err', 'Username wajib diisi.');
+      if (pw.length < 12) return fail('#fp-err', 'Password baru minimal 12 karakter.');
+      if (pw !== pw2) return fail('#fp-err', 'Ulangi password belum sama.');
+      btn.disabled = true;
+      if (Store.remote) {
+        try { await Store.db.req('reset_password', {username, password: pw}); }
+        catch (er) { btn.disabled = false; return fail('#fp-err', er.message); }
+      } else {
+        const u = findLogin(username);
+        if (!u) { btn.disabled = false; return fail('#fp-err', 'Username tidak ditemukan.'); }
+        const salt = newSalt();
+        await Store.saveUser({...u, salt, hash: hashPw(pw, salt), mustChange: false});
+      }
+      closeSheet();
+      const idEl = $('#au-id'), pwEl = $('#au-pw');
+      if (idEl) idEl.value = username;
+      if (pwEl) pwEl.value = '';
+      toast('Password berhasil diperbarui. Silakan masuk dengan password baru.');
+      return;
+    }
       return;
     }
     if (kind === 'user') {
