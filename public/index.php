@@ -17,8 +17,9 @@ $menuPages = [
     'pembelian' => ['view' => 'beli',    'label' => 'Pembelian',      'file' => 'pembelian.php'],
     'kas'       => ['view' => 'kas',     'label' => 'Kas & Biaya',    'file' => 'kas.php'],
     'hpp'       => ['view' => 'hpp',     'label' => 'Kalkulator HPP', 'file' => 'hpp.php'],
-    'produk'    => ['view' => 'produk',  'label' => 'Produk',         'file' => 'produk.php'],
-    'master'    => ['view' => 'master',  'label' => 'Master Data',    'file' => 'master.php'],
+    'produk'        => ['view' => 'produk',   'label' => 'Produk',         'file' => 'produk.php'],
+    'setting-login' => ['view' => 'loginset', 'label' => 'Setting Login',  'file' => 'setting-login.php'],
+    'master'        => ['view' => 'master',   'label' => 'Master Data',    'file' => 'master.php'],
 ];
 
 $requested = strtolower(trim((string)($_GET['page'] ?? 'kasir')));

@@ -12,9 +12,9 @@ final class Tenant
     public const MAIN = 'main';
     public const COLLECTIONS = ['products', 'settings', 'days', 'kas', 'stock', 'items', 'itemMoves', 'suppliers', 'evals', 'orders', 'hpp'];
     /** Fields of settings/main shared by every kantin; only the super admin changes them. */
-    public const GLOBAL_FIELDS = ['tables', 'qrBase', 'kantins'];
+    public const GLOBAL_FIELDS = ['tables', 'qrBase', 'kantins', 'loginBg'];
     /** Settings fields customers (table QR) may read. */
-    public const GUEST_SETTINGS = ['shopName', 'categories', 'pay', 'tables', 'qrBase', 'kantins'];
+    public const GUEST_SETTINGS = ['shopName', 'categories', 'pay', 'tables', 'qrBase', 'kantins', 'loginBg'];
 
     /** "k.ab12cd.orders" → ['ab12cd', 'orders']; "orders" → ['main', 'orders']; "users" → ['', 'users']; unknown → null. */
     public static function split(string $col): ?array

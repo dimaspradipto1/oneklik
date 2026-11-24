@@ -46,6 +46,7 @@ const ICONS = {
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg>',
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6.5h16M4 12h11M4 17.5h16"/></svg>',
   master: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg>',
+  loginset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15.5l-5-4.5-6 5.5-3-2.5-4 3.5"/></svg>',
   pesan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18a9 7 0 0 1-18 0z"/><path d="M8 8c0-1.5 1.5-1.5 1.5-3M12 8c0-1.5 1.5-1.5 1.5-3M16 8c0-1.5 1.5-1.5 1.5-3"/></svg>',
   pesananku: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.8h12v18.4l-2.4-1.6-2.4 1.6-2.4-1.6-2.4 1.6L6 21.2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
   note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
@@ -1640,12 +1641,12 @@ function hashPw(pw, salt) { let h = salt + ':' + pw; for (let i = 0; i < 2000; i
 const newSalt = () => Array.from({length: 4}, () => Math.random().toString(36).slice(2, 8)).join('');
 
 const ROLES = {
-  admin: {l: 'Super Admin', views: ['kasir', 'riwayat', 'laporan', 'stok', 'beli', 'kas', 'hpp', 'produk', 'master']},
+  admin: {l: 'Super Admin', views: ['kasir', 'riwayat', 'laporan', 'stok', 'beli', 'kas', 'hpp', 'produk', 'loginset', 'master']},
   pemilik: {l: 'Pemilik Usaha', views: ['kasir', 'riwayat', 'laporan', 'stok', 'beli', 'kas', 'hpp', 'produk', 'master']},
   pelanggan: {l: 'Pelanggan (QR meja)', views: ['pilih', 'pesan', 'pesananku']}
 };
 const VIEW_LABEL = {kasir: ['Kasir', 'Kasir'], riwayat: ['Riwayat', 'Riwayat'], laporan: ['Laporan', 'Laporan'], hpp: ['HPP', 'Kalkulator HPP'], stok: ['Stok', 'Stok Produk'], beli: ['Beli', 'Pembelian'],
-  kas: ['Kas', 'Kas & Biaya'], produk: ['Produk', 'Produk'], master: ['Master', 'Master Data'], gantipw: ['Password', 'Ganti Password'], pilih: ['Kantin', 'Pilih Kantin'], pesan: ['Menu', 'Pesan Menu'], pesananku: ['Pesanan', 'Pesanan Saya']};
+  kas: ['Kas', 'Kas & Biaya'], produk: ['Produk', 'Produk'], loginset: ['Login', 'Setting Login'], master: ['Master', 'Master Data'], gantipw: ['Password', 'Ganti Password'], pilih: ['Kantin', 'Pilih Kantin'], pesan: ['Menu', 'Pesan Menu'], pesananku: ['Pesanan', 'Pesanan Saya']};
 const users = () => Object.values(S.users || {}).filter(u => u && u.username);
 function me() {
   if (S.guestTable) return S.guest && S.guest.name && S.guest.phone && tableOf(S.guestTable) ? {id: 'g:' + S.guest.gid, name: S.guest.name, phone: S.guest.phone, role: 'pelanggan'} : null;
@@ -1684,6 +1685,7 @@ const APP_ICON = '<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradi
 const G_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.5c2.1-1.9 3.3-4.7 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.2-2.7l-3.5-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.2v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.2a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.2 7.1l3.6 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>';
 /* Login photo: a file next to the page on XAMPP; embedded in the online copy. */
 const LOGIN_BG = 'assets/img/login-kantin.webp?v=5';
+const loginBgUrl = () => (S.gsettings && S.gsettings.loginBg) || LOGIN_BG;
 function authArt() {
   return `<svg class="aart" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs><linearGradient id="awall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EAF4E4"/><stop offset="1" stop-color="#F6EFE2"/></linearGradient>
@@ -1745,9 +1747,31 @@ function vAuth(mode) {
     <button class="agoogle" data-act="google">${G_ICON}Masuk dengan Google</button>
     <p class="aalt">Punya usaha kantin? <button class="alink" data-act="auth-mode" data-v="register">Daftar sebagai pemilik usaha</button></p>
     <p class="aalt" style="margin-top:6px">Pelanggan tidak perlu akun: cukup scan QR code di meja untuk memesan.</p>`;
-  return `<div class="auth"><div class="auth-left"><div class="aphoto" role="img" aria-label="Suasana kantin" style="background-image:url('${LOGIN_BG}')"></div></div>
+  return `<div class="auth${mode === 'guest' ? ' auth-guest' : ''}"><div class="auth-left"><div class="aphoto" role="img" aria-label="Suasana kantin" style="background-image:url('${esc(loginBgUrl())}')"></div></div>
     <div class="auth-right"><svg class="awave" viewBox="0 0 800 220" preserveAspectRatio="none" aria-hidden="true"><path d="M0 150C160 60 300 210 470 140S700 40 800 70V220H0z" fill="#CDEBBF"/><path d="M120 220C260 120 420 210 560 170S740 110 800 130V220z" fill="#5BBE3C" opacity=".75"/><path d="M380 220C520 170 660 210 800 180V220z" fill="#2E8A22"/></svg>
       <div class="auth-card">${brand}${body}</div></div></div>`;
+}
+
+function vSettingLogin() {
+  const cur = loginBgUrl(), isCustom = !!(S.gsettings && S.gsettings.loginBg);
+  return `<div class="vhead"><div><h2>Setting Login</h2><p class="muted">Ubah gambar latar halaman login dan halaman scan QR pelanggan</p></div></div>
+    <div class="stack">
+      <div class="card">
+        <h3>Pratinjau gambar saat ini</h3>
+        <div style="border-radius:16px;overflow:hidden;border:1px solid var(--line);height:220px;background:#DCEBD6;margin-bottom:14px">
+          <img id="lb-prev" src="${esc(cur)}" alt="Gambar halaman login" style="width:100%;height:100%;object-fit:cover;display:block">
+        </div>
+        <form data-form="login-bg" class="stack" novalidate>
+          <div class="field"><label for="lb-file">Pilih gambar baru (JPG / PNG / WebP)</label><input id="lb-file" type="file" accept="image/*"><span class="hint">Gambar otomatis disesuaikan ukurannya agar cepat dimuat.</span></div>
+          <div class="field"><label for="lb-url">Atau masukkan URL gambar</label><input id="lb-url" name="url" type="url" value="${isCustom && !cur.startsWith('data:') ? esc(cur) : ''}" placeholder="https://contoh.id/foto-kantin.jpg"></div>
+          <p class="err" id="lb-err" hidden></p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <button class="btn primary" type="submit">Simpan Gambar</button>
+            ${isCustom ? '<button class="btn ghost danger-txt" type="button" data-act="login-bg-reset">Kembalikan ke Default</button>' : ''}
+          </div>
+        </form>
+      </div>
+    </div>`;
 }
 
 /* ---------- master data ---------- */
@@ -2349,8 +2373,8 @@ const ACT = {
   nav: (el, id, v) => {
     S.view = v; S.txLimit = 25; closeDrawer(); saveUI();
     try {
-      const slug = v === 'beli' ? 'pembelian' : v;
-      if (['kasir', 'riwayat', 'laporan', 'stok', 'pembelian', 'kas', 'hpp', 'produk', 'master'].includes(slug)) {
+      const slug = v === 'beli' ? 'pembelian' : v === 'loginset' ? 'setting-login' : v;
+      if (['kasir', 'riwayat', 'laporan', 'stok', 'pembelian', 'kas', 'hpp', 'produk', 'setting-login', 'master'].includes(slug)) {
         const u = new URL(location.href); u.searchParams.set('page', slug);
         history.replaceState(null, '', u.pathname + u.search + u.hash);
       }
@@ -2563,6 +2587,12 @@ const ACT = {
     if (Store.remote) Store.db.req('logout', {}).then(() => Store.db.refresh()).catch(() => {}); setSession(null); S.cart = {}; S.cash = 0; S.meta = newMeta(); S.authPage = 'login'; S.authShown = null; closeDrawer(); closeSheet(); render(); },
   'my-pw': () => { const u = me(); if (u) openSheet(() => pwForm(u, true)); },
   'master-tab': (el, id, v) => { S.masterTab = v; render(); },
+  'login-bg-reset': async () => {
+    if (role() !== 'admin') return;
+    await Store.saveGlobal({loginBg: ''});
+    S.loginBgDraft = '';
+    render(); toast('Gambar login dikembalikan ke default');
+  },
   'reg-open': () => { closeSheet(); S.view = 'master'; S.masterTab = 'users'; render(); },
   'reg-ok': async (el, id) => {
     const u = S.users[id]; if (!u || !u.pending || role() !== 'admin') return;
@@ -2825,6 +2855,9 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const t = e.target;
+  if (t.id === 'lb-file' && t.files && t.files[0]) {
+    readQrImage(t.files[0]).then(d => { S.loginBgDraft = d; const p = $('#lb-prev'); if (p) p.src = d; }).catch(() => toast('Gambar tidak bisa dibaca. Coba file JPG/PNG lain.'));
+  }
   if (t.matches('[data-kid]')) { S.adminKid = t.value; try { localStorage.setItem('kantin-uis-kid', t.value); } catch (e) {} closeDrawer(); render(); }
   if (t.matches('[data-hd]') && S.histDel && t.value) { S.histDel = {...S.histDel, [t.dataset.hd]: t.value}; redrawSheet(); }
   if (t.id === 'hist-date') { S.histDate = t.value || dayKey(Date.now()); render(); }
@@ -2872,6 +2905,17 @@ document.addEventListener('submit', async e => {
       btn.disabled = true;
       if (qty !== 0) await Store.addItemMove({id: uid('im'), at: Date.now(), iid: it.id, iname: it.name, type: fix ? 'koreksi' : 'pakai', qty, unit: it.unit, note: String(fd.get('note') || '').trim()});
       closeSheet(); toast(fix ? (qty ? 'Stok dikoreksi' : 'Stok sudah sesuai') : 'Pemakaian dicatat'); return;
+    }
+    if (kind === 'login-bg') {
+      if (role() !== 'admin') return;
+      const url = String(fd.get('url') || '').trim();
+      const val = url || S.loginBgDraft || '';
+      if (!val) return fail('#lb-err', 'Pilih gambar atau masukkan URL gambar terlebih dahulu.');
+      if (url && !/^https?:\/\/.+/i.test(url)) return fail('#lb-err', 'URL gambar harus diawali http:// atau https://.');
+      btn.disabled = true;
+      await Store.saveGlobal({loginBg: val});
+      S.loginBgDraft = '';
+      render(); toast('Gambar halaman login diperbarui'); return;
     }
     if (kind === 'payset') {
       const k = f.dataset.v, enabled = fd.get('enabled') === 'on', img = String(fd.get('img') || ''), name = String(fd.get('name') || '').trim(), number = normPhone(fd.get('number') || '');
@@ -3173,7 +3217,7 @@ async function exportCsv() {
 }
 
 /* ---------- render ---------- */
-const VIEWS = {gantipw: vGantiPw, pilih: vPilih, beli: vBeliPage, kasir: vKasir, pesan: vKasir, pesananku: vPesananku, master: vMaster, riwayat: vRiwayat, laporan: vLaporan, hpp: vHpp, stok: vStok, kas: vKas, produk: vProduk};
+const VIEWS = {gantipw: vGantiPw, pilih: vPilih, beli: vBeliPage, kasir: vKasir, pesan: vKasir, pesananku: vPesananku, loginset: vSettingLogin, master: vMaster, riwayat: vRiwayat, laporan: vLaporan, hpp: vHpp, stok: vStok, kas: vKas, produk: vProduk};
 function render() { renderMain(); try { soundWatch(); } catch (e) {} }
 function renderMain() {
   const u = me();
@@ -3181,6 +3225,7 @@ function renderMain() {
   if (!u) {
     const mode = authMode(), box = $('#auth');
     if (S.authShown !== mode) { S.authShown = mode; box.innerHTML = vAuth(mode); }
+    else { const ph = box.querySelector('.aphoto'); if (ph) ph.style.backgroundImage = `url('${loginBgUrl()}')`; }
     box.hidden = false; return;
   }
   $('#auth').hidden = true; S.authShown = null;
