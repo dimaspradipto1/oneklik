@@ -2084,7 +2084,7 @@ function vPesananku() {
     <div class="card"><h3>Riwayat pembelian</h3>${done.length ? `<div class="receipts">${done.map(t => receipt(t, true)).join('')}</div>` : '<p class="muted" style="margin:0">Belum ada pembelian yang selesai.</p>'}</div></div>`;
 }
 const CUST_ACTS = new Set(['sound-toggle', 'confirm-yes', 'c-hist-del', 'c-hist-clear', 'pick-kantin', 'c-paychoose', 'c-choose', 'c-pay', 'c-payopen', 'c-paid', 'c-paykasir', 'copy-text', 'guest-edit', 'nav', 'cat', 'add', 'sub', 'remove', 'otype', 'open-cart', 'close-sheet', 'c-send', 'c-cancel', 'logout', 'my-pw', 'open-drawer', 'close-drawer', 'sort', 'set-sort', 'hide-banner', 'focus-order', 'add-more']);
-const AUTH_ACTS = new Set(['auth-mode', 'pw-eye', 'google', 'forgot', 'close-sheet']);
+const AUTH_ACTS = new Set(['auth-mode', 'pw-eye', 'google', 'forgot', 'close-sheet', 'guest-pick-kantin', 'guest-change-kantin']);
 
 /* ---------- PHP backend (public/api) ----------
    Same document interface the page already uses (collection/doc, set/update/delete, onSnapshot),
@@ -2165,9 +2165,16 @@ function guestHistory() { try { return JSON.parse(localStorage.getItem('kantin-u
 function setGuestHistory(h) { try { localStorage.setItem('kantin-uis-guest-orders', JSON.stringify(h)); } catch (e) {} }
 function addGuestHistory(x) { const h = [x, ...guestHistory()].slice(0, 30); try { localStorage.setItem('kantin-uis-guest-orders', JSON.stringify(h)); } catch (e) {} }
 function guestForm() {
-  const t = tableOf(S.guestTable), g = S.guest || {};
+  const t = tableOf(S.guestTable), g = S.guest || {}, list = activeKantins();
   if (!t) return `<h2>QR meja tidak dikenali</h2><p class="asub">Kode meja ini tidak terdaftar atau sudah dihapus. Minta QR code yang baru ke kasir.</p>`;
-  return `<div class="ameja">${ICONS.pesan}<span>Anda memesan dari</span><b>${esc(t.name)}</b></div>
+  if (!list.length) return `<div class="ameja">${ICONS.pesan}<span>Anda memesan dari</span><b>${esc(t.name)}</b></div><h2>Belum ada kantin yang buka</h2><p class="asub">Silakan tanyakan ke petugas kantin.</p>`;
+  if (!S.guestKid || !list.some(k => k.id === S.guestKid)) {
+    return `<div class="ameja">${ICONS.pesan}<span>Anda memesan dari</span><b>${esc(t.name)}</b></div>
+      <h2>Pilih kantin</h2><p class="asub">Pilih kantin yang ingin Anda pesan terlebih dahulu.</p>
+      <div class="kgrid" style="margin-top:12px">${list.map(k => `<button type="button" class="kcard" data-act="guest-pick-kantin" data-v="${esc(k.id)}"><span class="kc-ico">${esc(initials(k.name))}</span><span class="kc-t"><b>${esc(k.name)}</b>${k.desc ? `<small>${esc(k.desc)}</small>` : ''}</span><span class="kc-go" aria-hidden="true">›</span></button>`).join('')}</div>`;
+  }
+  const chosen = list.find(k => k.id === S.guestKid);
+  return `<div class="ameja">${ICONS.pesan}<span>${esc(t.name)} · </span><b>${esc(chosen.name)}</b>${list.length > 1 ? ` <button type="button" class="linkbtn inl" data-act="guest-change-kantin" style="margin-left:auto;font-size:12.5px">Ganti</button>` : ''}</div>
     <h2>Isi data pemesan</h2><p class="asub">Tanpa daftar akun. Nama dan nomor HP dipakai kasir untuk memanggil Anda saat pesanan siap.</p>
     <form data-form="guest" class="aform" novalidate>
       <label class="ain" for="gs-name">${ICONS.user}<input id="gs-name" name="name" value="${esc(g.name || '')}" placeholder="Nama Anda" autocomplete="name" maxlength="40" required></label>
@@ -2523,6 +2530,8 @@ const ACT = {
   'c-hist-del': (el, id) => confirmSheet('Hapus riwayat ini?', 'Riwayat pesanan ini dihapus dari HP ini saja. Data penjualan di kasir tidak berubah.', 'Hapus', () => { setGuestHistory(guestHistory().filter(h => h.id !== id)); render(); toast('Riwayat dihapus'); }, true),
   'c-hist-clear': () => confirmSheet('Hapus semua riwayat?', `Semua ${guestHistory().filter(h => !guestAllOrders().some(o => o.id === h.id)).length} riwayat pesanan di HP ini akan dihapus. Pesanan yang masih menunggu tidak ikut terhapus, dan data penjualan di kasir tidak berubah.`, 'Hapus semua', () => { setGuestHistory(guestHistory().filter(h => guestAllOrders().some(o => o.id === h.id))); render(); toast('Riwayat dihapus'); }, true),
   'pick-kantin': (el, id, v) => { if (!activeKantins().some(k => k.id === v)) return; S.guestKid = v; S.view = 'pesan'; render(); window.scrollTo(0, 0); },
+  'guest-pick-kantin': (el, id, v) => { if (!activeKantins().some(k => k.id === v)) return; S.guestKid = v; S.authShown = null; render(); const i = $('#gs-name'); if (i) i.focus(); },
+  'guest-change-kantin': () => { S.guestKid = null; S.authShown = null; render(); },
   'kantin-open': (el, id, v) => { S.adminKid = v; try { localStorage.setItem('kantin-uis-kid', v); } catch (e) {} S.view = 'kasir'; render(); toast('Sekarang mengelola ' + kantinName(v)); },
   'kantin-edit': (el, id, v) => { const k = kantinsList().find(x => x.id === v); if (k) openSheet(() => kantinForm(k)); },
   'kantin-del': (el, id, v) => {
