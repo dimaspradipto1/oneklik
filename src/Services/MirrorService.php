@@ -19,14 +19,14 @@ namespace App\Services;
 final class MirrorService
 {
     /** Raise when the table layout changes: ensure() then recreates and refills the mirror. */
-    public const VERSION = 4;
+    public const VERSION = 5;
 
     private const TENANT_COLS = ['products', 'settings', 'days', 'kas', 'stock', 'items', 'itemMoves', 'suppliers', 'evals', 'orders', 'hpp'];
 
     /** Child tables first, so DROP works with the foreign keys. */
     public const TABLES = ['sale_items', 'sales', 'order_items', 'orders', 'hpp_menus', 'supplier_evaluations', 'suppliers',
         'item_movements', 'items', 'stock_movements', 'cash_entries', 'products', 'payment_methods', 'categories',
-        'dining_tables', 'users', 'kantins'];
+        'dining_tables', 'users', 'kantins', 'regions'];
 
     private \DateTimeZone $tz;
 
@@ -165,13 +165,24 @@ final class MirrorService
     private function settings(string $kid, ?object $s): void
     {
         if ($kid === 'main') {
-            // Global part: the kantin list and the table QR codes.
+            // Global part: regions, kantins, and table QR codes.
+            $this->pdo->exec('DELETE FROM regions');
+            foreach ($s && is_array($s->regions ?? null) ? $s->regions : [] as $i => $r) {
+                if (!is_object($r) || self::s($r, 'id') === '') continue;
+                $this->ins('regions', [
+                    'id' => $r->id,
+                    'name' => self::s($r, 'name'),
+                    'sort_order' => $i,
+                    'is_active' => self::b($r, 'active', true),
+                ]);
+            }
             $list = $s && is_array($s->kantins ?? null) ? $s->kantins : [];
             $ids = [];
             foreach ($list as $k) {
                 if (!is_object($k) || self::s($k, 'id') === '') continue;
                 $ids[] = $k->id;
                 $this->upsert('kantins', ['id' => $k->id], [
+                    'region_id' => self::s($k, 'regionId') ?: null,
                     'name' => self::s($k, 'name'), 'description' => self::s($k, 'desc') ?: null, 'is_active' => self::b($k, 'active', true),
                 ]);
             }
@@ -183,7 +194,7 @@ final class MirrorService
             $this->pdo->exec('DELETE FROM dining_tables');
             foreach ($s && is_array($s->tables ?? null) ? $s->tables : [] as $i => $t) {
                 if (!is_object($t) || self::s($t, 'id') === '') continue;
-                $this->ins('dining_tables', ['id' => $t->id, 'kantin_id' => self::s($t, 'kid') ?: null, 'name' => self::s($t, 'name'), 'sort_order' => $i]);
+                $this->ins('dining_tables', ['id' => $t->id, 'kantin_id' => self::s($t, 'kid') ?: null, 'region_id' => self::s($t, 'regionId') ?: null, 'name' => self::s($t, 'name'), 'sort_order' => $i]);
             }
             $this->pdo->prepare("UPDATE kantins SET qr_base_url = ? WHERE id = 'main'")->execute([$s ? (self::s($s, 'qrBase') ?: null) : null]);
         }
@@ -437,8 +448,12 @@ final class MirrorService
         $e = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
         $k = "kantin_id VARCHAR(20) NOT NULL COMMENT 'kantins.id'";
         return [
+            "CREATE TABLE regions (
+                id VARCHAR(20) NOT NULL, name VARCHAR(80) NOT NULL, sort_order INT NOT NULL DEFAULT 0, is_active TINYINT(1) NOT NULL DEFAULT 1,
+                PRIMARY KEY (id)
+            )$e COMMENT='Wilayah / lokasi kantin'",
             "CREATE TABLE kantins (
-                id VARCHAR(20) NOT NULL, name VARCHAR(120) NULL, description VARCHAR(255) NULL, is_active TINYINT(1) NOT NULL DEFAULT 1,
+                id VARCHAR(20) NOT NULL, region_id VARCHAR(20) NULL COMMENT 'regions.id', name VARCHAR(120) NULL, description VARCHAR(255) NULL, is_active TINYINT(1) NOT NULL DEFAULT 1,
                 shop_name VARCHAR(120) NULL, owner_name VARCHAR(120) NULL, opening_date DATE NULL,
                 opening_cash DECIMAL(15,2) NOT NULL DEFAULT 0, opening_inventory DECIMAL(15,2) NOT NULL DEFAULT 0, equipment_value DECIMAL(15,2) NOT NULL DEFAULT 0,
                 qr_base_url VARCHAR(255) NULL,
@@ -453,7 +468,7 @@ final class MirrorService
                 PRIMARY KEY (id), UNIQUE KEY uq_users_username (username), UNIQUE KEY uq_users_email (email), KEY idx_users_kantin (kantin_id)
             )$e COMMENT='Pengguna (Super Admin & Pemilik Usaha)'",
             "CREATE TABLE dining_tables (
-                id VARCHAR(40) NOT NULL, kantin_id VARCHAR(20) NULL, name VARCHAR(80) NOT NULL, sort_order INT NOT NULL DEFAULT 0,
+                id VARCHAR(40) NOT NULL, kantin_id VARCHAR(20) NULL, region_id VARCHAR(20) NULL COMMENT 'regions.id', name VARCHAR(80) NOT NULL, sort_order INT NOT NULL DEFAULT 0,
                 PRIMARY KEY (id)
             )$e COMMENT='Meja & QR code'",
             "CREATE TABLE categories (

@@ -99,9 +99,13 @@ function kantinsList() {
 }
 const activeKantins = () => kantinsList().filter(k => k.active !== false);
 const kantinName = kid => (kantinsList().find(k => k.id === kid) || {}).name || 'Kantin';
+const regionsList = () => (Array.isArray(gset().regions) ? gset().regions : []).filter(r => r && r.id && r.name);
+const activeRegions = () => regionsList().filter(r => r.active !== false);
+const regionName = id => (regionsList().find(r => r.id === id) || {}).name || '';
+const regionOpts = sel => `<option value="">-- Tanpa wilayah --</option>` + regionsList().map(r => `<option value="${esc(r.id)}" ${sel === r.id ? 'selected' : ''}>${esc(r.name)}${r.active === false ? ' (nonaktif)' : ''}</option>`).join('');
 function staffKid() { const u = me(); if (!u || isCust()) return null; return u.role === 'pemilik' ? (u.kid || 'main') : (S.adminKid || 'main'); }
 try { S.adminKid = localStorage.getItem('kantin-uis-kid') || 'main'; } catch (e) { S.adminKid = 'main'; }
-S.kid = 'main'; S.guestKid = null; S.gk = {};
+S.kid = 'main'; S.guestKid = null; S.guestRegion = undefined; S.gk = {};
 function cfg() {
   const s = S.settings || {};
   return {
@@ -1775,12 +1779,30 @@ function vSettingLogin() {
 }
 
 /* ---------- master data ---------- */
-const masterTabs = () => role() === 'admin' ? [['users', 'Pengguna'], ['kantin', 'Kantin'], ['meja', 'Meja & QR code'], ['bayar', 'Metode bayar'], ['kategori', 'Kategori produk']] : [['bayar', 'Metode bayar'], ['kategori', 'Kategori produk']];
+const masterTabs = () => role() === 'admin' ? [['users', 'Pengguna'], ['wilayah', 'Wilayah'], ['kantin', 'Kantin'], ['meja', 'Meja & QR code'], ['bayar', 'Metode bayar'], ['kategori', 'Kategori produk']] : [['bayar', 'Metode bayar'], ['kategori', 'Kategori produk']];
 function vMaster() {
   const mt = masterTabs(), tab = mt.some(([k]) => k === S.masterTab) ? S.masterTab : mt[0][0];
-  return `<div class="vhead"><div><h2>Master data</h2><p class="muted">${role() === 'admin' ? 'Kelola pengguna, kantin, meja & QR code, metode bayar, dan kategori' : 'Kelola metode bayar dan kategori produk ' + esc(kantinName(S.kid))}</p></div></div>
-    <div class="seg" role="tablist">${mt.map(([k, l]) => `<button role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="master-tab" data-v="${k}">${l}</button>`).join('')}</div>
-    ${({users: vMasterUsers, kantin: vMasterKantin, meja: vMasterMeja, bayar: vMasterBayar, kategori: vMasterCat})[tab]()}`;
+  return `<div class="vhead"><div><h2>Master data</h2><p class="muted">${role() === 'admin' ? 'Kelola pengguna, wilayah, kantin, meja & QR code, metode bayar, dan kategori' : 'Kelola metode bayar dan kategori produk ' + esc(kantinName(S.kid))}</p></div></div>
+    <div class="seg scroll" role="tablist">${mt.map(([k, l]) => `<button role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="master-tab" data-v="${k}">${l}</button>`).join('')}</div>
+    ${({users: vMasterUsers, wilayah: vMasterWilayah, kantin: vMasterKantin, meja: vMasterMeja, bayar: vMasterBayar, kategori: vMasterCat})[tab]()}`;
+}
+function vMasterWilayah() {
+  const list = regionsList(), ks = kantinsList();
+  return `<div class="stack"><p class="hint" style="margin:0">Kelompokkan kantin berdasarkan wilayah/lokasi (mis. Area Timur, Area Barat, Foodcourt Lt. 2). Pelanggan yang scan QR meja bisa langsung memilih wilayah lalu kantinnya.</p>
+    <form data-form="region-new" class="catnew" novalidate><input name="name" placeholder="Nama wilayah baru, mis. Area Timur" maxlength="60" aria-label="Nama wilayah baru"><button class="btn primary" type="submit">+ Tambah wilayah</button><p class="err" id="rn-err" hidden></p></form>
+    ${list.length ? `<div class="list">${list.map(r => {
+      const n = ks.filter(k => k.regionId === r.id).length;
+      return `<div class="li ${r.active === false ? 'off' : ''}"><span class="ico">${esc(initials(r.name))}</span>
+        <div><div class="t">${esc(r.name)}${r.active === false ? ' <span class="tag">Nonaktif</span>' : ''}</div><div class="s">${n} kantin</div></div>
+        <div class="li-act"><button class="iconbtn" data-act="region-edit" data-v="${esc(r.id)}" aria-label="Ubah ${esc(r.name)}">${ICONS.edit}</button><button class="iconbtn danger-ic" data-act="region-del" data-v="${esc(r.id)}" aria-label="Hapus ${esc(r.name)}">${ICONS.trash}</button></div></div>`;
+    }).join('')}</div>` : '<div class="empty"><b>Belum ada wilayah</b>Tambahkan wilayah di atas, lalu hubungkan ke masing-masing kantin di tab Kantin.</div>'}</div>`;
+}
+function regionForm(r) {
+  return `<h3>Ubah wilayah</h3><form data-form="region-edit" data-v="${esc(r.id)}" novalidate>
+    <div class="field"><label for="re-name">Nama wilayah</label><input id="re-name" name="name" value="${esc(r.name)}" maxlength="60"></div>
+    <label class="check"><input type="checkbox" name="active" ${r.active !== false ? 'checked' : ''}> Tampilkan ke pelanggan</label>
+    <p class="err" id="re-err" hidden></p>
+    <div class="two"><button type="button" class="btn ghost" data-act="close-sheet">Batal</button><button class="btn primary" type="submit">Simpan</button></div></form>`;
 }
 function vMasterUsers() {
   const list = users().sort((a, b) => Object.keys(ROLES).indexOf(a.role) - Object.keys(ROLES).indexOf(b.role) || a.name.localeCompare(b.name, 'id'));
@@ -1804,16 +1826,17 @@ function vMasterUsers() {
       ${Object.keys(VIEW_LABEL).filter(v => v !== 'gantipw').map(v => `<tr><td>${VIEW_LABEL[v][1]}</td>${Object.values(ROLES).map(r => `<td class="n">${r.views.includes(v) ? '<span class="spill ok">✓</span>' : '<span class="muted">–</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div></div>`;
 }
 function vMasterKantin() {
-  const list = kantinsList(), owners = kid => users().filter(u => u.role === 'pemilik' && (u.kid || 'main') === kid);
-  return `<div class="stack"><p class="hint" style="margin:0">Setiap kantin punya menu, pesanan, stok, kas, laporan, dan akun pembayaran sendiri. Satu QR meja dipakai bersama: pelanggan memilih kantin setelah scan. Hubungkan akun Pemilik Usaha ke kantinnya di tab Pengguna.</p>
-    <form data-form="kantin-new" class="catnew" novalidate><input name="name" placeholder="Nama kantin baru, mis. Kantin Bu Siti" maxlength="40" aria-label="Nama kantin baru"><button class="btn primary" type="submit">+ Tambah kantin</button><p class="err" id="kn-err" hidden></p></form>
-    <div class="list">${list.map(k => `<div class="li ${k.active === false ? 'off' : ''}"><span class="ico">${esc(initials(k.name))}</span>
-      <div><div class="t">${esc(k.name)}${k.id === S.kid ? ' <span class="tag">sedang dikelola</span>' : ''}${k.active === false ? ' <span class="tag">Nonaktif</span>' : ''}</div><div class="s">${k.desc ? esc(k.desc) + ' · ' : ''}Pemilik: ${owners(k.id).map(u => esc(u.name)).join(', ') || 'belum ada'}</div></div>
-      <div class="li-act">${k.id === S.kid ? '' : `<button class="btn ghost sm" data-act="kantin-open" data-v="${esc(k.id)}">Kelola</button>`}<button class="iconbtn" data-act="kantin-edit" data-v="${esc(k.id)}" aria-label="Ubah ${esc(k.name)}">${ICONS.edit}</button>${k.id === 'main' || list.length <= 1 ? '' : `<button class="iconbtn danger-ic" data-act="kantin-del" data-v="${esc(k.id)}" aria-label="Hapus ${esc(k.name)}">${ICONS.trash}</button>`}</div></div>`).join('')}</div></div>`;
+  const list = kantinsList(), regs = regionsList(), owners = kid => users().filter(u => u.role === 'pemilik' && (u.kid || 'main') === kid);
+  return `<div class="stack"><p class="hint" style="margin:0">Setiap kantin punya menu, pesanan, stok, kas, laporan, dan akun pembayaran sendiri. Satu QR meja dipakai bersama: pelanggan memilih wilayah lalu kantinnya. Hubungkan akun Pemilik Usaha ke kantinnya di tab Pengguna.</p>
+    <form data-form="kantin-new" class="catnew" novalidate><input name="name" placeholder="Nama kantin baru, mis. Kantin Bu Siti" maxlength="40" aria-label="Nama kantin baru">${regs.length ? `<select name="regionId" aria-label="Wilayah kantin">${regionOpts('')}</select>` : ''}<button class="btn primary" type="submit">+ Tambah kantin</button><p class="err" id="kn-err" hidden></p></form>
+    <div class="list">${list.map(k => { const rn = k.regionId ? regionName(k.regionId) : ''; return `<div class="li ${k.active === false ? 'off' : ''}"><span class="ico">${esc(initials(k.name))}</span>
+      <div><div class="t">${esc(k.name)}${rn ? ` <span class="tag">${esc(rn)}</span>` : ''}${k.id === S.kid ? ' <span class="tag">sedang dikelola</span>' : ''}${k.active === false ? ' <span class="tag">Nonaktif</span>' : ''}</div><div class="s">${k.desc ? esc(k.desc) + ' · ' : ''}Pemilik: ${owners(k.id).map(u => esc(u.name)).join(', ') || 'belum ada'}</div></div>
+      <div class="li-act">${k.id === S.kid ? '' : `<button class="btn ghost sm" data-act="kantin-open" data-v="${esc(k.id)}">Kelola</button>`}<button class="iconbtn" data-act="kantin-edit" data-v="${esc(k.id)}" aria-label="Ubah ${esc(k.name)}">${ICONS.edit}</button>${k.id === 'main' || list.length <= 1 ? '' : `<button class="iconbtn danger-ic" data-act="kantin-del" data-v="${esc(k.id)}" aria-label="Hapus ${esc(k.name)}">${ICONS.trash}</button>`}</div></div>`; }).join('')}</div></div>`;
 }
 function kantinForm(k) {
   return `<h3>Ubah kantin</h3><form data-form="kantin-edit" data-v="${esc(k.id)}" novalidate>
     <div class="field"><label for="ke-name">Nama kantin</label><input id="ke-name" name="name" value="${esc(k.name)}" maxlength="40"></div>
+    <div class="field"><label for="ke-reg">Wilayah</label><select id="ke-reg" name="regionId">${regionOpts(k.regionId || '')}</select></div>
     <div class="field"><label for="ke-desc">Keterangan</label><input id="ke-desc" name="desc" value="${esc(k.desc || '')}" maxlength="80" placeholder="mis. Nasi & lauk, minuman segar"></div>
     <label class="check"><input type="checkbox" name="active" ${k.active !== false ? 'checked' : ''}> Tampilkan ke pelanggan</label>
     <p class="err" id="ke-err" hidden></p>
@@ -2107,8 +2130,8 @@ function vPesananku() {
         <div class="sv-act">${o.payClaim || o.paid ? '' : `${o.payMethod && o.payMethod !== 'kasir' ? `<button class="btn primary sm" data-act="c-payopen" data-id="${esc(o.id)}">Bayar ${payLabel(o.payMethod)}</button>` : ''}${['kasir', 'qris', 'shopeepay', 'gopay'].filter(payReady).length > 1 ? `<button class="btn ghost sm" data-act="c-paychoose" data-id="${esc(o.id)}">${o.payMethod && o.payMethod !== 'kasir' ? 'Ubah metode bayar' : 'Pilih metode bayar'}</button>` : ''}`}${o.status ? '' : `<button class="btn ghost sm" data-act="c-cancel" data-id="${esc(o.id)}">Batalkan pesanan</button>`}</div>${o.status === 'diantar' ? `<p class="hint" style="margin:0">Pesanan sudah diantar. Selamat menikmati!${!o.payMethod || o.payMethod === 'kasir' ? ' Silakan bayar di kasir.' : ''}</p>` : o.status === 'diproses' ? `<p class="hint" style="margin:0">Pesanan sedang disiapkan.${!o.payMethod || o.payMethod === 'kasir' ? ' Silakan bayar di kasir saat mengambil pesanan.' : ''}</p>` : ''}</article>`; }).join('')}</div>` : '<p class="muted" style="margin:0">Tidak ada pesanan yang sedang menunggu.</p>'}</div>
     <div class="card"><h3>Riwayat pembelian</h3>${done.length ? `<div class="receipts">${done.map(t => receipt(t, true)).join('')}</div>` : '<p class="muted" style="margin:0">Belum ada pembelian yang selesai.</p>'}</div></div>`;
 }
-const CUST_ACTS = new Set(['sound-toggle', 'confirm-yes', 'c-hist-del', 'c-hist-clear', 'pick-kantin', 'c-paychoose', 'c-choose', 'c-pay', 'c-payopen', 'c-paid', 'c-paykasir', 'copy-text', 'guest-edit', 'nav', 'cat', 'add', 'sub', 'remove', 'otype', 'open-cart', 'close-sheet', 'c-send', 'c-cancel', 'logout', 'my-pw', 'open-drawer', 'close-drawer', 'sort', 'set-sort', 'hide-banner', 'focus-order', 'add-more']);
-const AUTH_ACTS = new Set(['auth-mode', 'pw-eye', 'google', 'forgot', 'close-sheet', 'guest-pick-kantin', 'guest-change-kantin']);
+const CUST_ACTS = new Set(['sound-toggle', 'confirm-yes', 'c-hist-del', 'c-hist-clear', 'pick-kantin', 'guest-region', 'c-paychoose', 'c-choose', 'c-pay', 'c-payopen', 'c-paid', 'c-paykasir', 'copy-text', 'guest-edit', 'nav', 'cat', 'add', 'sub', 'remove', 'otype', 'open-cart', 'close-sheet', 'c-send', 'c-cancel', 'logout', 'my-pw', 'open-drawer', 'close-drawer', 'sort', 'set-sort', 'hide-banner', 'focus-order', 'add-more']);
+const AUTH_ACTS = new Set(['auth-mode', 'pw-eye', 'google', 'forgot', 'close-sheet', 'guest-pick-kantin', 'guest-change-kantin', 'guest-region']);
 
 /* ---------- PHP backend (public/api) ----------
    Same document interface the page already uses (collection/doc, set/update/delete, onSnapshot),
@@ -2188,17 +2211,31 @@ const validPhone = v => /^08\d{8,12}$/.test(normPhone(v));
 function guestHistory() { try { return JSON.parse(localStorage.getItem('kantin-uis-guest-orders') || '[]'); } catch (e) { return []; } }
 function setGuestHistory(h) { try { localStorage.setItem('kantin-uis-guest-orders', JSON.stringify(h)); } catch (e) {} }
 function addGuestHistory(x) { const h = [x, ...guestHistory()].slice(0, 30); try { localStorage.setItem('kantin-uis-guest-orders', JSON.stringify(h)); } catch (e) {} }
+function regionChipsHtml(cur) {
+  const regs = activeRegions();
+  if (!regs.length) return '';
+  return `<div class="chips" role="tablist" aria-label="Filter wilayah" style="margin-top:8px"><button type="button" class="chip ${!cur ? 'on' : ''}" data-act="guest-region" data-v="">Semua</button>${regs.map(r => `<button type="button" class="chip ${cur === r.id ? 'on' : ''}" data-act="guest-region" data-v="${esc(r.id)}">${esc(r.name)}</button>`).join('')}</div>`;
+}
+function curGuestRegion(t) {
+  const regs = activeRegions();
+  if (S.guestRegion === undefined) S.guestRegion = (t && t.regionId && regs.some(r => r.id === t.regionId)) ? t.regionId : '';
+  if (S.guestRegion && !regs.some(r => r.id === S.guestRegion)) S.guestRegion = '';
+  return S.guestRegion;
+}
 function guestForm() {
   const t = tableOf(S.guestTable), g = S.guest || {}, list = activeKantins();
   if (!t) return `<h2>QR meja tidak dikenali</h2><p class="asub">Kode meja ini tidak terdaftar atau sudah dihapus. Minta QR code yang baru ke kasir.</p>`;
   if (!list.length) return `<div class="ameja">${ICONS.pesan}<span>Anda memesan dari</span><b>${esc(t.name)}</b></div><h2>Belum ada kantin yang buka</h2><p class="asub">Silakan tanyakan ke petugas kantin.</p>`;
   if (!S.guestKid || !list.some(k => k.id === S.guestKid)) {
+    const reg = curGuestRegion(t), filtered = reg ? list.filter(k => k.regionId === reg) : list;
     return `<div class="ameja">${ICONS.pesan}<span>Anda memesan dari</span><b>${esc(t.name)}</b></div>
-      <h2>Pilih kantin</h2><p class="asub">Pilih kantin yang ingin Anda pesan terlebih dahulu.</p>
-      <div class="kgrid" style="margin-top:12px">${list.map(k => `<button type="button" class="kcard" data-act="guest-pick-kantin" data-v="${esc(k.id)}"><span class="kc-ico">${esc(initials(k.name))}</span><span class="kc-t"><b>${esc(k.name)}</b>${k.desc ? `<small>${esc(k.desc)}</small>` : ''}</span><span class="kc-go" aria-hidden="true">›</span></button>`).join('')}</div>`;
+      <h2>Pilih kantin</h2><p class="asub">${activeRegions().length ? 'Pilih wilayah lalu pilih kantin yang ingin Anda pesan.' : 'Pilih kantin yang ingin Anda pesan terlebih dahulu.'}</p>
+      ${regionChipsHtml(reg)}
+      ${filtered.length ? `<div class="kgrid" style="margin-top:10px">${filtered.map(k => { const rn = k.regionId ? regionName(k.regionId) : ''; return `<button type="button" class="kcard" data-act="guest-pick-kantin" data-v="${esc(k.id)}"><span class="kc-ico">${esc(initials(k.name))}</span><span class="kc-t"><b>${esc(k.name)}</b>${rn || k.desc ? `<small>${[rn, k.desc].filter(Boolean).map(esc).join(' · ')}</small>` : ''}</span><span class="kc-go" aria-hidden="true">›</span></button>`; }).join('')}</div>`
+        : '<div class="empty" style="margin-top:10px"><b>Belum ada kantin di wilayah ini</b>Pilih wilayah lain atau ketuk Semua.</div>'}`;
   }
-  const chosen = list.find(k => k.id === S.guestKid);
-  return `<div class="ameja">${ICONS.pesan}<span>${esc(t.name)} · </span><b>${esc(chosen.name)}</b>${list.length > 1 ? ` <button type="button" class="linkbtn inl" data-act="guest-change-kantin" style="margin-left:auto;font-size:12.5px">Ganti</button>` : ''}</div>
+  const chosen = list.find(k => k.id === S.guestKid), rn = chosen.regionId ? regionName(chosen.regionId) : '';
+  return `<div class="ameja">${ICONS.pesan}<span>${esc(t.name)} · </span><b>${esc(chosen.name)}${rn ? ' (' + esc(rn) + ')' : ''}</b>${list.length > 1 ? ` <button type="button" class="linkbtn inl" data-act="guest-change-kantin" style="margin-left:auto;font-size:12.5px">Ganti</button>` : ''}</div>
     <h2>Isi data pemesan</h2><p class="asub">Tanpa daftar akun. Nama dan nomor HP dipakai kasir untuk memanggil Anda saat pesanan siap.</p>
     <form data-form="guest" class="aform" novalidate>
       <label class="ain" for="gs-name">${ICONS.user}<input id="gs-name" name="name" value="${esc(g.name || '')}" placeholder="Nama Anda" autocomplete="name" maxlength="40" required></label>
@@ -2228,11 +2265,11 @@ function vMasterMeja() {
       <form data-form="qrbase" class="catnew" novalidate><input name="base" value="${esc(cfg().qrBase || '')}" placeholder="${esc(window.claude ? 'Tempel link aplikasi ini' : location.origin + location.pathname)}" aria-label="Alamat aplikasi"><button class="btn primary" type="submit">Simpan</button><p class="err" id="qb-err" hidden></p></form>
       <p class="hint ${local || !base ? 'warn' : ''}" style="margin:8px 0 0">${!base ? 'Belum ada alamat. Tempel alamat aplikasi yang bisa dibuka dari HP pelanggan.' : local ? `Alamat <b>${esc(base)}</b> hanya bisa dibuka di komputer ini. Agar HP pelanggan bisa membuka QR, isi dengan alamat IP komputer kasir di Wi-Fi kantin, mis. <b>http://192.168.1.10/kantin-uis.html</b> (lihat IP dengan perintah <code>ipconfig</code>).` : `QR mengarah ke <b>${esc(base)}</b>. Pastikan HP pelanggan tersambung ke Wi-Fi yang sama dengan komputer kasir.`}</p></div>
     <div class="card"><h3>Tambah meja</h3>
-      <form data-form="table-new" class="tblnew" novalidate><input name="name" placeholder="Nama meja, mis. Meja 1 / Teras A" maxlength="30" aria-label="Nama meja"><button class="btn primary" type="submit">+ Tambah</button>
+      <form data-form="table-new" class="tblnew" novalidate><input name="name" placeholder="Nama meja, mis. Meja 1 / Teras A" maxlength="30" aria-label="Nama meja">${regionsList().length ? `<select name="regionId" aria-label="Wilayah meja">${regionOpts('')}</select>` : ''}<button class="btn primary" type="submit">+ Tambah</button>
         <span class="muted">atau</span><div class="pin sm"><input name="count" class="num" inputmode="numeric" placeholder="10" aria-label="Jumlah meja sekaligus"><span>meja</span></div><button class="btn ghost" type="submit" name="bulk" value="1">Buat sekaligus</button>
         <p class="err" id="tb-err" hidden></p></form></div>
     ${list.length ? `<div class="qrbar"><b>${list.length} meja</b>${window.claude ? '' : '<button class="btn ghost sm" data-act="qr-print">Cetak semua QR</button>'}</div>
-      <div class="qrgrid" id="qrgrid">${list.map(t => { const u = tableUrl(t); return `<article class="qrcard"><div class="qrhead"><span class="mark">${MARK}</span><div><b>Oneklik Biz</b><small>Scan untuk memesan</small></div></div>
+      <div class="qrgrid" id="qrgrid">${list.map(t => { const u = tableUrl(t), rn = t.regionId ? regionName(t.regionId) : ''; return `<article class="qrcard"><div class="qrhead"><span class="mark">${MARK}</span><div><b>Oneklik Biz</b><small>${rn ? esc(rn) + ' · ' : ''}Scan untuk memesan</small></div></div>
         <div class="qrimg">${qrSvg(u)}</div><h4>${esc(t.name)}</h4><p class="qrurl">${esc(u || 'alamat belum diisi')}</p>
         <div class="qract"><button class="btn ghost sm" data-act="qr-copy" data-id="${esc(t.id)}">Salin link</button><button class="btn ghost sm" data-act="qr-png" data-id="${esc(t.id)}">Unduh PNG</button><button class="iconbtn" data-act="table-edit" data-id="${esc(t.id)}" aria-label="Ubah nama ${esc(t.name)}">${ICONS.edit}</button><button class="iconbtn danger-ic" data-act="table-del" data-id="${esc(t.id)}" aria-label="Hapus ${esc(t.name)}">${ICONS.trash}</button></div></article>`; }).join('')}</div>`
       : '<div class="empty"><b>Belum ada meja</b>Tambahkan meja, lalu cetak QR code-nya dan tempel di setiap meja.</div>'}</div>`;
@@ -2256,10 +2293,12 @@ async function qrPng(t) {
 }
 
 function vPilih() {
-  const list = activeKantins(), t = tableOf(S.guestTable);
-  return `<div class="vhead"><div><h2>Pilih kantin</h2><p class="muted">${t ? esc(t.name) + ' · ' : ''}Satu QR meja untuk semua kantin. Pilih kantin, lalu pilih menunya.</p></div></div>
-    ${list.length ? `<div class="kgrid">${list.map(k => `<button class="kcard ${S.guestKid === k.id ? 'on' : ''}" data-act="pick-kantin" data-v="${esc(k.id)}"><span class="kc-ico">${esc(initials(k.name))}</span><span class="kc-t"><b>${esc(k.name)}</b>${k.desc ? `<small>${esc(k.desc)}</small>` : ''}</span><span class="kc-go" aria-hidden="true">›</span></button>`).join('')}</div>`
-      : '<div class="empty"><b>Belum ada kantin yang buka</b>Silakan tanyakan ke petugas kantin.</div>'}`;
+  const list = activeKantins(), t = tableOf(S.guestTable), reg = curGuestRegion(t);
+  const filtered = reg ? list.filter(k => k.regionId === reg) : list;
+  return `<div class="vhead"><div><h2>Pilih kantin</h2><p class="muted">${t ? esc(t.name) + ' · ' : ''}${activeRegions().length ? 'Pilih wilayah lalu pilih kantinnya.' : 'Satu QR meja untuk semua kantin. Pilih kantin, lalu pilih menunya.'}</p></div></div>
+    ${regionChipsHtml(reg)}
+    ${filtered.length ? `<div class="kgrid">${filtered.map(k => { const rn = k.regionId ? regionName(k.regionId) : ''; return `<button class="kcard ${S.guestKid === k.id ? 'on' : ''}" data-act="pick-kantin" data-v="${esc(k.id)}"><span class="kc-ico">${esc(initials(k.name))}</span><span class="kc-t"><b>${esc(k.name)}</b>${rn || k.desc ? `<small>${[rn, k.desc].filter(Boolean).map(esc).join(' · ')}</small>` : ''}</span><span class="kc-go" aria-hidden="true">›</span></button>`; }).join('')}</div>`
+      : '<div class="empty"><b>Belum ada kantin di wilayah ini</b>Pilih wilayah lain atau ketuk Semua.</div>'}`;
 }
 function guestAllOrders() {
   const gid = S.guest && S.guest.gid, out = [];
@@ -2556,6 +2595,18 @@ const ACT = {
   'pick-kantin': (el, id, v) => { if (!activeKantins().some(k => k.id === v)) return; S.guestKid = v; S.view = 'pesan'; render(); window.scrollTo(0, 0); },
   'guest-pick-kantin': (el, id, v) => { if (!activeKantins().some(k => k.id === v)) return; S.guestKid = v; S.authShown = null; render(); const i = $('#gs-name'); if (i) i.focus(); },
   'guest-change-kantin': () => { S.guestKid = null; S.authShown = null; render(); },
+  'guest-region': (el, id, v) => { S.guestRegion = v || ''; if (!me()) S.authShown = null; render(); },
+  'region-edit': (el, id, v) => { const r = regionsList().find(x => x.id === v); if (r) openSheet(() => regionForm(r)); },
+  'region-del': (el, id, v) => {
+    const list = regionsList(), r = list.find(x => x.id === v); if (!r) return;
+    const used = kantinsList().filter(k => k.regionId === v).length;
+    confirmSheet('Hapus wilayah?', used ? `Wilayah “${esc(r.name)}” akan dihapus. ${used} kantin akan menjadi tanpa wilayah.` : `Wilayah “${esc(r.name)}” akan dihapus.`, 'Hapus', async () => {
+      const ks = kantinsList().map(k => k.regionId === v ? {...k, regionId: ''} : k);
+      const ts = tables().map(t => t.regionId === v ? {...t, regionId: ''} : t);
+      await Store.saveGlobal({regions: list.filter(x => x.id !== v), kantins: ks, tables: ts});
+      render(); toast('Wilayah dihapus');
+    }, true);
+  },
   'kantin-open': (el, id, v) => { S.adminKid = v; try { localStorage.setItem('kantin-uis-kid', v); } catch (e) {} S.view = 'kasir'; render(); toast('Sekarang mengelola ' + kantinName(v)); },
   'kantin-edit': (el, id, v) => { const k = kantinsList().find(x => x.id === v); if (k) openSheet(() => kantinForm(k)); },
   'kantin-del': (el, id, v) => {
@@ -2580,7 +2631,7 @@ const ACT = {
   'qr-copy': (el, id) => { const t = tableOf(id), u = t && tableUrl(t); if (!u) return; navigator.clipboard.writeText(u).then(() => toast('Link disalin'), () => toast(u)); },
   'qr-png': (el, id) => { const t = tableOf(id); if (t) qrPng(t).catch(() => toast('Gagal membuat gambar QR.')); },
   'qr-print': () => { document.body.classList.add('print-qr'); const done = () => { document.body.classList.remove('print-qr'); window.removeEventListener('afterprint', done); }; window.addEventListener('afterprint', done); window.print(); },
-  'table-edit': (el, id) => { const t = tableOf(id); if (t) openSheet(() => `<h3>Ubah nama meja</h3><form data-form="table-edit" data-id="${esc(t.id)}" novalidate><div class="field"><label for="te-name">Nama meja</label><input id="te-name" name="name" value="${esc(t.name)}" maxlength="30"></div><p class="hint">QR code yang sudah dicetak tetap berlaku.</p><p class="err" id="te-err" hidden></p><div class="two"><button type="button" class="btn ghost" data-act="close-sheet">Batal</button><button class="btn primary" type="submit">Simpan</button></div></form>`); },
+  'table-edit': (el, id) => { const t = tableOf(id); if (t) openSheet(() => `<h3>Ubah meja</h3><form data-form="table-edit" data-id="${esc(t.id)}" novalidate><div class="field"><label for="te-name">Nama meja</label><input id="te-name" name="name" value="${esc(t.name)}" maxlength="30"></div>${regionsList().length ? `<div class="field"><label for="te-reg">Wilayah meja</label><select id="te-reg" name="regionId">${regionOpts(t.regionId || '')}</select></div>` : ''}<p class="hint">QR code yang sudah dicetak tetap berlaku.</p><p class="err" id="te-err" hidden></p><div class="two"><button type="button" class="btn ghost" data-act="close-sheet">Batal</button><button class="btn primary" type="submit">Simpan</button></div></form>`); },
   'table-del': (el, id) => { const t = tableOf(id); if (!t) return; confirmSheet('Hapus meja?', `“${esc(t.name)}” akan dihapus. QR code meja ini yang sudah dicetak tidak bisa dipakai lagi.`, 'Hapus', () => saveTables(tables().filter(x => x.id !== id)).then(() => toast('Meja dihapus')).catch(e => toast('Gagal: ' + errMsg(e))), true); },
   logout: () => {
     if (S.guestTable) { ACT['guest-edit'](); return; }
@@ -2924,13 +2975,29 @@ document.addEventListener('submit', async e => {
       if (number && !validPhone(number)) return fail('#pe-' + k, 'Nomor belum benar. Contoh: 081234567890.');
       btn.disabled = true; await savePay({[k]: k === 'qris' ? {enabled, img, name} : {enabled, img: '', name, number}}); render(); toast(payLabel(k) + ' disimpan'); return;
     }
+    if (kind === 'region-new' || kind === 'region-edit') {
+      const list = [...regionsList()], name = String(fd.get('name') || '').trim(), errSel = kind === 'region-new' ? '#rn-err' : '#re-err';
+      if (!name) return fail(errSel, 'Isi nama wilayah.');
+      if (list.some(r => r.id !== f.dataset.v && r.name.toLowerCase() === name.toLowerCase())) return fail(errSel, 'Nama wilayah sudah ada.');
+      btn.disabled = true;
+      if (kind === 'region-new') {
+        let id; do { id = 'r' + Math.random().toString(36).slice(2, 7); } while (list.some(r => r.id === id));
+        list.push({id, name, active: true});
+      } else {
+        const r = list.find(x => x.id === f.dataset.v);
+        if (r) Object.assign(r, {name, active: fd.get('active') === 'on'});
+      }
+      await Store.saveGlobal({regions: list});
+      if (kind === 'region-edit') closeSheet();
+      render(); toast(kind === 'region-new' ? 'Wilayah ditambahkan' : 'Wilayah diperbarui'); return;
+    }
     if (kind === 'kantin-new' || kind === 'kantin-edit') {
-      const list = kantinsList(), name = String(fd.get('name') || '').trim(), errSel = kind === 'kantin-new' ? '#kn-err' : '#ke-err';
+      const list = kantinsList(), name = String(fd.get('name') || '').trim(), regionId = String(fd.get('regionId') || '').trim(), errSel = kind === 'kantin-new' ? '#kn-err' : '#ke-err';
       if (!name) return fail(errSel, 'Isi nama kantin.');
       if (list.some(k => k.id !== f.dataset.v && k.name.toLowerCase() === name.toLowerCase())) return fail(errSel, 'Nama kantin sudah ada.');
       btn.disabled = true;
-      if (kind === 'kantin-new') { let id; do { id = Math.random().toString(36).slice(2, 8); } while (id === 'main' || list.some(k => k.id === id)); list.push({id, name, active: true}); }
-      else { const k = list.find(x => x.id === f.dataset.v); if (k) Object.assign(k, {name, desc: String(fd.get('desc') || '').trim(), active: fd.get('active') === 'on'}); }
+      if (kind === 'kantin-new') { let id; do { id = Math.random().toString(36).slice(2, 8); } while (id === 'main' || list.some(k => k.id === id)); list.push({id, name, regionId, active: true}); }
+      else { const k = list.find(x => x.id === f.dataset.v); if (k) Object.assign(k, {name, regionId, desc: String(fd.get('desc') || '').trim(), active: fd.get('active') === 'on'}); }
       await Store.saveGlobal({kantins: list});
       if (kind === 'kantin-edit') closeSheet();
       render(); toast(kind === 'kantin-new' ? 'Kantin ditambahkan' : 'Kantin diperbarui'); return;
@@ -2949,21 +3016,21 @@ document.addEventListener('submit', async e => {
       render(); toast('Alamat QR disimpan'); return;
     }
     if (kind === 'table-new') {
-      const bulk = e.submitter && e.submitter.name === 'bulk', list = [...tables()], mkId = () => { let id; do { id = Math.random().toString(36).slice(2, 8); } while (list.some(t => t.id === id)); return id; };
+      const bulk = e.submitter && e.submitter.name === 'bulk', regionId = String(fd.get('regionId') || '').trim(), list = [...tables()], mkId = () => { let id; do { id = Math.random().toString(36).slice(2, 8); } while (list.some(t => t.id === id)); return id; };
       if (bulk) {
         const n = digits(fd.get('count')); if (!n || n > 100) return fail('#tb-err', 'Isi jumlah meja 1–100.');
-        let k = list.length; for (let i = 0; i < n; i++) { let nm; do { nm = 'Meja ' + (++k); } while (list.some(t => t.name === nm)); list.push({id: mkId(), name: nm}); }
+        let k = list.length; for (let i = 0; i < n; i++) { let nm; do { nm = 'Meja ' + (++k); } while (list.some(t => t.name === nm)); list.push({id: mkId(), name: nm, regionId}); }
       } else {
         const name = String(fd.get('name') || '').trim(); if (!name) return fail('#tb-err', 'Isi nama meja.');
         if (list.some(t => t.name.toLowerCase() === name.toLowerCase())) return fail('#tb-err', 'Nama meja sudah ada.');
-        list.push({id: mkId(), name});
+        list.push({id: mkId(), name, regionId});
       }
       btn.disabled = true; await saveTables(list); render(); toast('Meja ditambahkan'); return;
     }
     if (kind === 'table-edit') {
-      const name = String(fd.get('name') || '').trim(), id = f.dataset.id; if (!name) return fail('#te-err', 'Isi nama meja.');
+      const name = String(fd.get('name') || '').trim(), regionId = String(fd.get('regionId') || '').trim(), id = f.dataset.id; if (!name) return fail('#te-err', 'Isi nama meja.');
       if (tables().some(t => t.id !== id && t.name.toLowerCase() === name.toLowerCase())) return fail('#te-err', 'Nama meja sudah ada.');
-      btn.disabled = true; await saveTables(tables().map(t => t.id === id ? {...t, name} : t)); closeSheet(); toast('Nama meja diubah'); return;
+      btn.disabled = true; await saveTables(tables().map(t => t.id === id ? {...t, name, regionId} : t)); closeSheet(); toast('Meja diperbarui'); return;
     }
     if (kind === 'login') {
       const now = Date.now();

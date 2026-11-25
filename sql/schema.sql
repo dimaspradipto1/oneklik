@@ -14,8 +14,17 @@ CREATE TABLE IF NOT EXISTS meta (
     PRIMARY KEY (k)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS regions (
+    id VARCHAR(20) NOT NULL,
+    name VARCHAR(80) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Wilayah / lokasi kantin';
+
 CREATE TABLE IF NOT EXISTS kantins (
     id VARCHAR(20) NOT NULL,
+    region_id VARCHAR(20) NULL COMMENT 'regions.id',
     name VARCHAR(120) NULL,
     description VARCHAR(255) NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -53,6 +62,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS dining_tables (
     id VARCHAR(40) NOT NULL,
     kantin_id VARCHAR(20) NULL,
+    region_id VARCHAR(20) NULL COMMENT 'regions.id',
     name VARCHAR(80) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
